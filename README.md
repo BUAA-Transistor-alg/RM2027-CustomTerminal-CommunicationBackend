@@ -339,6 +339,7 @@ python3 python/run_client.py --lib /path/to/librm2027c.so
 ```
 CMakeLists.txt            CMake 构建定义（生成 Unix Makefiles）
 build.sh                  一键构建：cmake + make -j$(nproc)
+LICENSE                   MIT 许可证（本仓库自有代码）
 proto/                    proto 定义（由官方 PDF §2.2 提取，32 条）
 include/rm2027/           公开头文件（api/ 为 C++ 接口，capi/ 为 C 接口）
 src/                      实现 + CLI main
@@ -358,3 +359,19 @@ docs/                     协议变更分析 / 移植说明 / 调研文档 / 归
 | [docs/README-full.md](docs/README-full.md) | 旧版完整 README（实现细节、验证方法、踩坑记录；已归档） |
 | [docs/官方码流封帧调研.md](docs/官方码流封帧调研.md) | 官方图传封帧规则的原文核对 |
 | [docs/UDP-字节序调研.md](docs/UDP-字节序调研.md) | 8 字节包头字节序的调研与实测 |
+
+---
+
+## 许可证
+
+- **本仓库自有代码**（`src/`、`include/`、`proto/`、`python/`、`tests/`、`tools/`、`examples/` 等）采用
+  **MIT License**，见 [LICENSE](LICENSE)。
+- **第三方依赖**按各自许可证分发，使用时请一并遵守：
+
+| 依赖 | 许可证 | 说明 |
+| :-- | :-- | :-- |
+| protobuf（本地构建 v21.12） | BSD-3-Clause | 见 [third_party/LICENSE.protobuf](third_party/LICENSE.protobuf) |
+| Paho MQTT C / C++ | EPL-2.0 或 EDL-1.0（双许可，任选其一） | 系统包安装 |
+| FFmpeg（libavcodec 等） | LGPL-2.1+（发行版常规构建）或 GPL-2.0+（启用 GPL 组件时） | 以系统发行版实际构建为准；本仓库动态链接 |
+| PyQt5（仅控制面板） | GPL-3.0 或商业许可 | 随包分发面板时需注意 GPL 要求 |
+- **官方文档**：《RoboMaster 通信协议》《比赛规则》等版权归大疆创新所有；`docs/` 下为自行撰写的说明、调研与变更分析，不包含官方文档原文。
