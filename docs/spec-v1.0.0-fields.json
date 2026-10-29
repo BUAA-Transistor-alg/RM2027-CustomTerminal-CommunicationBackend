@@ -1,0 +1,1082 @@
+{
+ "KeyboardMouseControl": [
+  {
+   "name": "mouse_x",
+   "type": "int32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "mouse_y",
+   "type": "int32",
+   "num": 2,
+   "repeated": false
+  },
+  {
+   "name": "mouse_z",
+   "type": "int32",
+   "num": 3,
+   "repeated": false
+  },
+  {
+   "name": "left_button_down",
+   "type": "bool",
+   "num": 4,
+   "repeated": false
+  },
+  {
+   "name": "right_button_down",
+   "type": "bool",
+   "num": 5,
+   "repeated": false
+  },
+  {
+   "name": "keyboard_value",
+   "type": "uint32",
+   "num": 6,
+   "repeated": false
+  },
+  {
+   "name": "mid_button_down",
+   "type": "bool",
+   "num": 7,
+   "repeated": false
+  }
+ ],
+ "CustomControl": [
+  {
+   "name": "data",
+   "type": "bytes",
+   "num": 1,
+   "repeated": false
+  }
+ ],
+ "GameStatus": [
+  {
+   "name": "current_round",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "total_rounds",
+   "type": "uint32",
+   "num": 2,
+   "repeated": false
+  },
+  {
+   "name": "red_score",
+   "type": "uint32",
+   "num": 3,
+   "repeated": false
+  },
+  {
+   "name": "blue_score",
+   "type": "uint32",
+   "num": 4,
+   "repeated": false
+  },
+  {
+   "name": "current_stage",
+   "type": "uint32",
+   "num": 5,
+   "repeated": false
+  },
+  {
+   "name": "stage_countdown_sec",
+   "type": "int32",
+   "num": 6,
+   "repeated": false
+  },
+  {
+   "name": "stage_elapsed_sec",
+   "type": "int32",
+   "num": 7,
+   "repeated": false
+  },
+  {
+   "name": "is_paused",
+   "type": "bool",
+   "num": 8,
+   "repeated": false
+  },
+  {
+   "name": "game_result",
+   "type": "uint32",
+   "num": 9,
+   "repeated": false
+  },
+  {
+   "name": "end_reason",
+   "type": "uint32",
+   "num": 10,
+   "repeated": false
+  }
+ ],
+ "GlobalUnitStatus": [
+  {
+   "name": "base_health",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "base_status",
+   "type": "uint32",
+   "num": 2,
+   "repeated": false
+  },
+  {
+   "name": "base_shield",
+   "type": "uint32",
+   "num": 3,
+   "repeated": false
+  },
+  {
+   "name": "outpost_R_health",
+   "type": "uint32",
+   "num": 4,
+   "repeated": false
+  },
+  {
+   "name": "outpost_R_status",
+   "type": "uint32",
+   "num": 5,
+   "repeated": false
+  },
+  {
+   "name": "enemy_base_health",
+   "type": "uint32",
+   "num": 6,
+   "repeated": false
+  },
+  {
+   "name": "enemy_base_status",
+   "type": "uint32",
+   "num": 7,
+   "repeated": false
+  },
+  {
+   "name": "enemy_base_shield",
+   "type": "uint32",
+   "num": 8,
+   "repeated": false
+  },
+  {
+   "name": "outpost_B_health",
+   "type": "uint32",
+   "num": 9,
+   "repeated": false
+  },
+  {
+   "name": "outpost_B_status",
+   "type": "uint32",
+   "num": 10,
+   "repeated": false
+  },
+  {
+   "name": "robot_health",
+   "type": "uint32",
+   "num": 11,
+   "repeated": true
+  },
+  {
+   "name": "robot_bullets",
+   "type": "int32",
+   "num": 12,
+   "repeated": true
+  },
+  {
+   "name": "total_damage_ally",
+   "type": "uint32",
+   "num": 13,
+   "repeated": false
+  },
+  {
+   "name": "total_damage_enemy",
+   "type": "uint32",
+   "num": 14,
+   "repeated": false
+  },
+  {
+   "name": "total_CP_ally",
+   "type": "uint32",
+   "num": 15,
+   "repeated": false
+  },
+  {
+   "name": "total_CP_enemy",
+   "type": "uint32",
+   "num": 16,
+   "repeated": false
+  }
+ ],
+ "GlobalLogisticsStatus": [
+  {
+   "name": "remaining_economy",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "total_economy_obtained",
+   "type": "uint64",
+   "num": 2,
+   "repeated": false
+  },
+  {
+   "name": "tech_level",
+   "type": "uint32",
+   "num": 3,
+   "repeated": false
+  },
+  {
+   "name": "encryption_level",
+   "type": "uint32",
+   "num": 4,
+   "repeated": false
+  }
+ ],
+ "GlobalSpecialMechanism": [
+  {
+   "name": "mechanism_id",
+   "type": "uint32",
+   "num": 1,
+   "repeated": true
+  },
+  {
+   "name": "mechanism_time_sec",
+   "type": "int32",
+   "num": 2,
+   "repeated": true
+  }
+ ],
+ "Event": [
+  {
+   "name": "event_id",
+   "type": "int32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "param",
+   "type": "string",
+   "num": 2,
+   "repeated": false
+  }
+ ],
+ "RobotInjuryStat": [
+  {
+   "name": "total_damage",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "collision_damage",
+   "type": "uint32",
+   "num": 2,
+   "repeated": false
+  },
+  {
+   "name": "small_projectile_damage",
+   "type": "uint32",
+   "num": 3,
+   "repeated": false
+  },
+  {
+   "name": "large_projectile_damage",
+   "type": "uint32",
+   "num": 4,
+   "repeated": false
+  },
+  {
+   "name": "dart_splash_damage",
+   "type": "uint32",
+   "num": 5,
+   "repeated": false
+  },
+  {
+   "name": "module_offline_damage",
+   "type": "uint32",
+   "num": 6,
+   "repeated": false
+  },
+  {
+   "name": "offline_damage",
+   "type": "uint32",
+   "num": 7,
+   "repeated": false
+  },
+  {
+   "name": "penalty_damage",
+   "type": "uint32",
+   "num": 8,
+   "repeated": false
+  },
+  {
+   "name": "server_kill_damage",
+   "type": "uint32",
+   "num": 9,
+   "repeated": false
+  },
+  {
+   "name": "killer_id",
+   "type": "uint32",
+   "num": 10,
+   "repeated": false
+  }
+ ],
+ "RobotRespawnStatus": [
+  {
+   "name": "is_pending_respawn",
+   "type": "bool",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "total_respawn_progress",
+   "type": "uint32",
+   "num": 2,
+   "repeated": false
+  },
+  {
+   "name": "current_respawn_progress",
+   "type": "uint32",
+   "num": 3,
+   "repeated": false
+  },
+  {
+   "name": "can_free_respawn",
+   "type": "bool",
+   "num": 4,
+   "repeated": false
+  },
+  {
+   "name": "gold_cost_for_respawn",
+   "type": "uint32",
+   "num": 5,
+   "repeated": false
+  },
+  {
+   "name": "can_pay_for_respawn",
+   "type": "bool",
+   "num": 6,
+   "repeated": false
+  }
+ ],
+ "RobotStaticStatus": [
+  {
+   "name": "connection_state",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "field_state",
+   "type": "uint32",
+   "num": 2,
+   "repeated": false
+  },
+  {
+   "name": "alive_state",
+   "type": "uint32",
+   "num": 3,
+   "repeated": false
+  },
+  {
+   "name": "robot_id",
+   "type": "uint32",
+   "num": 4,
+   "repeated": false
+  },
+  {
+   "name": "robot_type",
+   "type": "uint32",
+   "num": 5,
+   "repeated": false
+  },
+  {
+   "name": "performance_system_shooter",
+   "type": "uint32",
+   "num": 6,
+   "repeated": false
+  },
+  {
+   "name": "performance_system_chassis",
+   "type": "uint32",
+   "num": 7,
+   "repeated": false
+  },
+  {
+   "name": "level",
+   "type": "uint32",
+   "num": 8,
+   "repeated": false
+  },
+  {
+   "name": "max_health",
+   "type": "uint32",
+   "num": 9,
+   "repeated": false
+  },
+  {
+   "name": "max_heat",
+   "type": "uint32",
+   "num": 10,
+   "repeated": false
+  },
+  {
+   "name": "heat_cooldown_rate",
+   "type": "float",
+   "num": 11,
+   "repeated": false
+  },
+  {
+   "name": "max_power",
+   "type": "uint32",
+   "num": 12,
+   "repeated": false
+  },
+  {
+   "name": "max_buffer_energy",
+   "type": "uint32",
+   "num": 13,
+   "repeated": false
+  },
+  {
+   "name": "max_chassis_energy",
+   "type": "uint32",
+   "num": 14,
+   "repeated": false
+  }
+ ],
+ "RobotDynamicStatus": [
+  {
+   "name": "current_health",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "current_heat",
+   "type": "float",
+   "num": 2,
+   "repeated": false
+  },
+  {
+   "name": "last_projectile_fire_rate",
+   "type": "float",
+   "num": 3,
+   "repeated": false
+  },
+  {
+   "name": "reserved",
+   "type": "uint32",
+   "num": 4,
+   "repeated": false
+  },
+  {
+   "name": "current_buffer_energy",
+   "type": "uint32",
+   "num": 5,
+   "repeated": false
+  },
+  {
+   "name": "current_experience",
+   "type": "uint32",
+   "num": 6,
+   "repeated": false
+  },
+  {
+   "name": "experience_for_upgrade",
+   "type": "uint32",
+   "num": 7,
+   "repeated": false
+  },
+  {
+   "name": "total_projectiles_fired",
+   "type": "uint32",
+   "num": 8,
+   "repeated": false
+  },
+  {
+   "name": "remaining_ammo",
+   "type": "uint32",
+   "num": 9,
+   "repeated": false
+  },
+  {
+   "name": "is_out_of_combat",
+   "type": "bool",
+   "num": 10,
+   "repeated": false
+  },
+  {
+   "name": "out_of_combat_countdown",
+   "type": "uint32",
+   "num": 11,
+   "repeated": false
+  },
+  {
+   "name": "can_remote_heal",
+   "type": "bool",
+   "num": 12,
+   "repeated": false
+  },
+  {
+   "name": "can_remote_ammo",
+   "type": "bool",
+   "num": 13,
+   "repeated": false
+  }
+ ],
+ "RobotModuleStatus": [
+  {
+   "name": "power_manager",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "rfid",
+   "type": "uint32",
+   "num": 2,
+   "repeated": false
+  },
+  {
+   "name": "light_strip",
+   "type": "uint32",
+   "num": 3,
+   "repeated": false
+  },
+  {
+   "name": "small_shooter",
+   "type": "uint32",
+   "num": 4,
+   "repeated": false
+  },
+  {
+   "name": "big_shooter",
+   "type": "uint32",
+   "num": 5,
+   "repeated": false
+  },
+  {
+   "name": "uwb",
+   "type": "uint32",
+   "num": 6,
+   "repeated": false
+  },
+  {
+   "name": "armor",
+   "type": "uint32",
+   "num": 7,
+   "repeated": false
+  },
+  {
+   "name": "video_transmission",
+   "type": "uint32",
+   "num": 8,
+   "repeated": false
+  },
+  {
+   "name": "capacitor",
+   "type": "uint32",
+   "num": 9,
+   "repeated": false
+  },
+  {
+   "name": "main_controller",
+   "type": "uint32",
+   "num": 10,
+   "repeated": false
+  },
+  {
+   "name": "modular_42mm",
+   "type": "uint32",
+   "num": 11,
+   "repeated": false
+  }
+ ],
+ "RobotPosition": [
+  {
+   "name": "x",
+   "type": "float",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "y",
+   "type": "float",
+   "num": 2,
+   "repeated": false
+  },
+  {
+   "name": "z",
+   "type": "float",
+   "num": 3,
+   "repeated": false
+  },
+  {
+   "name": "yaw",
+   "type": "float",
+   "num": 4,
+   "repeated": false
+  },
+  {
+   "name": "robot_id",
+   "type": "uint32",
+   "num": 5,
+   "repeated": false
+  }
+ ],
+ "Buff": [
+  {
+   "name": "robot_id",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "buff_type",
+   "type": "uint32",
+   "num": 2,
+   "repeated": false
+  },
+  {
+   "name": "buff_level",
+   "type": "int32",
+   "num": 3,
+   "repeated": false
+  },
+  {
+   "name": "buff_max_time",
+   "type": "uint32",
+   "num": 4,
+   "repeated": false
+  },
+  {
+   "name": "buff_left_time",
+   "type": "uint32",
+   "num": 5,
+   "repeated": false
+  }
+ ],
+ "PenaltyInfo": [
+  {
+   "name": "penalty_type",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "penalty_effect_sec",
+   "type": "uint32",
+   "num": 2,
+   "repeated": false
+  },
+  {
+   "name": "total_penalty_num",
+   "type": "uint32",
+   "num": 3,
+   "repeated": false
+  }
+ ],
+ "RobotPathPlanInfo": [
+  {
+   "name": "intention",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "start_pos_x",
+   "type": "uint32",
+   "num": 2,
+   "repeated": false
+  },
+  {
+   "name": "start_pos_y",
+   "type": "uint32",
+   "num": 3,
+   "repeated": false
+  },
+  {
+   "name": "offset_x",
+   "type": "int32",
+   "num": 4,
+   "repeated": true
+  },
+  {
+   "name": "offset_y",
+   "type": "int32",
+   "num": 5,
+   "repeated": true
+  },
+  {
+   "name": "sender_id",
+   "type": "uint32",
+   "num": 6,
+   "repeated": false
+  }
+ ],
+ "MapClickInfo": [
+  {
+   "name": "is_send_all",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "robot_id",
+   "type": "bytes",
+   "num": 2,
+   "repeated": false
+  },
+  {
+   "name": "mode",
+   "type": "uint32",
+   "num": 3,
+   "repeated": false
+  },
+  {
+   "name": "enemy_id",
+   "type": "uint32",
+   "num": 4,
+   "repeated": false
+  },
+  {
+   "name": "ascii",
+   "type": "uint32",
+   "num": 5,
+   "repeated": false
+  },
+  {
+   "name": "type",
+   "type": "uint32",
+   "num": 6,
+   "repeated": false
+  },
+  {
+   "name": "map_x",
+   "type": "float",
+   "num": 7,
+   "repeated": false
+  },
+  {
+   "name": "map_y",
+   "type": "float",
+   "num": 8,
+   "repeated": false
+  }
+ ],
+ "MapClickCmd": [
+  {
+   "name": "is_send_all",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "robot_id",
+   "type": "bytes",
+   "num": 2,
+   "repeated": false
+  },
+  {
+   "name": "mode",
+   "type": "uint32",
+   "num": 3,
+   "repeated": false
+  },
+  {
+   "name": "enemy_id",
+   "type": "uint32",
+   "num": 4,
+   "repeated": false
+  },
+  {
+   "name": "ascii",
+   "type": "uint32",
+   "num": 5,
+   "repeated": false
+  },
+  {
+   "name": "type",
+   "type": "uint32",
+   "num": 6,
+   "repeated": false
+  },
+  {
+   "name": "map_x",
+   "type": "float",
+   "num": 7,
+   "repeated": false
+  },
+  {
+   "name": "map_y",
+   "type": "float",
+   "num": 8,
+   "repeated": false
+  }
+ ],
+ "RadarInfoToClient": [
+  {
+   "name": "radar_single_robot_info",
+   "type": "RadarSingleRobotInfo",
+   "num": 1,
+   "repeated": true,
+   "fields": [
+    {
+     "name": "target_pos_x",
+     "type": "uint32",
+     "num": 1,
+     "repeated": false
+    },
+    {
+     "name": "target_pos_y",
+     "type": "uint32",
+     "num": 2,
+     "repeated": false
+    },
+    {
+     "name": "is_high_light",
+     "type": "uint32",
+     "num": 3,
+     "repeated": false
+    }
+   ]
+  }
+ ],
+ "CustomByteBlock": [
+  {
+   "name": "data",
+   "type": "bytes",
+   "num": 1,
+   "repeated": false
+  }
+ ],
+ "AssemblyCommand": [
+  {
+   "name": "operation",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "difficulty",
+   "type": "uint32",
+   "num": 2,
+   "repeated": false
+  }
+ ],
+ "TechCoreMotionStateSync": [
+  {
+   "name": "maximum_difficulty_level",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "basic_state",
+   "type": "uint32",
+   "num": 2,
+   "repeated": false
+  },
+  {
+   "name": "putin_state",
+   "type": "uint32",
+   "num": 3,
+   "repeated": false
+  },
+  {
+   "name": "move_state",
+   "type": "uint32",
+   "num": 4,
+   "repeated": false
+  },
+  {
+   "name": "rotate_state",
+   "type": "uint32",
+   "num": 5,
+   "repeated": false
+  },
+  {
+   "name": "enemy_core_status",
+   "type": "uint32",
+   "num": 6,
+   "repeated": false
+  },
+  {
+   "name": "remain_time_all",
+   "type": "uint32",
+   "num": 7,
+   "repeated": false
+  },
+  {
+   "name": "remain_time_step",
+   "type": "uint32",
+   "num": 8,
+   "repeated": false
+  }
+ ],
+ "RobotPerformanceSelectionCommand": [
+  {
+   "name": "shooter",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "chassis",
+   "type": "uint32",
+   "num": 2,
+   "repeated": false
+  },
+  {
+   "name": "sentry_control",
+   "type": "uint32",
+   "num": 3,
+   "repeated": false
+  }
+ ],
+ "RobotPerformanceSelectionSync": [
+  {
+   "name": "shooter",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "chassis",
+   "type": "uint32",
+   "num": 2,
+   "repeated": false
+  },
+  {
+   "name": "sentry_control",
+   "type": "uint32",
+   "num": 3,
+   "repeated": false
+  }
+ ],
+ "CommonCommand": [
+  {
+   "name": "cmd_type",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "param",
+   "type": "uint32",
+   "num": 2,
+   "repeated": false
+  }
+ ],
+ "RuneActivateCommand": [
+  {
+   "name": "activate",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  }
+ ],
+ "RuneStatusSync": [
+  {
+   "name": "rune_status",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "activated_arms",
+   "type": "uint32",
+   "num": 2,
+   "repeated": false
+  },
+  {
+   "name": "average_rings",
+   "type": "float",
+   "num": 3,
+   "repeated": false
+  }
+ ],
+ "SentryStatusSync": [
+  {
+   "name": "posture_id",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "is_weakened",
+   "type": "bool",
+   "num": 2,
+   "repeated": false
+  },
+  {
+   "name": "is_powered",
+   "type": "bool",
+   "num": 3,
+   "repeated": false
+  }
+ ],
+ "DartCommand": [
+  {
+   "name": "target_id",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "open",
+   "type": "bool",
+   "num": 2,
+   "repeated": false
+  },
+  {
+   "name": "launch_confirm",
+   "type": "bool",
+   "num": 3,
+   "repeated": false
+  }
+ ],
+ "DartSelectTargetStatusSync": [
+  {
+   "name": "target_id",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "open",
+   "type": "uint32",
+   "num": 2,
+   "repeated": false
+  }
+ ],
+ "SentryCtrlCommand": [
+  {
+   "name": "command_id",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  }
+ ],
+ "SentryCtrlResult": [
+  {
+   "name": "command_id",
+   "type": "uint32",
+   "num": 1,
+   "repeated": false
+  },
+  {
+   "name": "result_code",
+   "type": "uint32",
+   "num": 2,
+   "repeated": false
+  }
+ ]
+}

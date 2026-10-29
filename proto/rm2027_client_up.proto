@@ -1,0 +1,62 @@
+syntax = "proto3";
+// RoboMaster 2027 机甲大师高校系列赛 自定义终端通信协议
+// 版本: V1.0.0 (20261029) —— 依据官方 PDF §2.2 提取
+// 官方要求 protobuf >= 3.15（proto3 optional）
+
+// ===== 上行：自定义终端 -> 服务器 =====
+package rm_client_up;
+
+message KeyboardMouseControl {
+    optional int32 mouse_x = 1;
+    optional int32 mouse_y = 2;
+    optional int32 mouse_z = 3;
+    optional bool left_button_down = 4;
+    optional bool right_button_down = 5;
+    optional uint32 keyboard_value = 6;
+    optional bool mid_button_down = 7;
+}
+
+message CustomControl {
+    optional bytes data = 1;
+}
+
+message MapClickCmd {
+    optional uint32 is_send_all = 1;
+    optional bytes robot_id = 2;
+    optional uint32 mode = 3;
+    optional uint32 enemy_id = 4;
+    optional uint32 ascii = 5;
+    optional uint32 type = 6;
+    optional float map_x = 7;
+    optional float map_y = 8;
+}
+
+message AssemblyCommand {
+    optional uint32 operation = 1;
+    optional uint32 difficulty = 2;
+}
+
+message RobotPerformanceSelectionCommand {
+    optional uint32 shooter = 1;
+    optional uint32 chassis = 2;
+    optional uint32 sentry_control = 3;
+}
+
+message CommonCommand {
+    optional uint32 cmd_type = 1;
+    optional uint32 param = 2;
+}
+
+message RuneActivateCommand {
+    optional uint32 activate = 1;
+}
+
+message DartCommand {
+    optional uint32 target_id = 1;
+    optional bool open = 2;
+    optional bool launch_confirm = 3;
+}
+
+message SentryCtrlCommand {
+    optional uint32 command_id = 1;
+}

@@ -1,0 +1,194 @@
+{
+ "AssemblyCommand": {
+  "hz": 0.0,
+  "max_hz": 10.0,
+  "raw": "触发式发送，发送频率最高为10Hz",
+  "triggered": true
+ },
+ "Buff": {
+  "hz": 1.0,
+  "max_hz": 1.0,
+  "raw": "1Hz",
+  "triggered": false
+ },
+ "CommonCommand": {
+  "hz": 0.0,
+  "max_hz": 10.0,
+  "raw": "触发式发送，发送频率最高为10Hz",
+  "triggered": true
+ },
+ "CustomByteBlock": {
+  "hz": 50.0,
+  "max_hz": 50.0,
+  "raw": "50Hz",
+  "triggered": false
+ },
+ "CustomControl": {
+  "hz": 75.0,
+  "max_hz": 75.0,
+  "raw": "75Hz",
+  "triggered": false
+ },
+ "DartCommand": {
+  "hz": 0.0,
+  "max_hz": 10.0,
+  "raw": "触发式发送，发送频率最高为10Hz",
+  "triggered": true
+ },
+ "DartSelectTargetStatusSync": {
+  "hz": 1.0,
+  "max_hz": 1.0,
+  "raw": "1Hz",
+  "triggered": false
+ },
+ "Event": {
+  "hz": 0.0,
+  "max_hz": 0.0,
+  "raw": "触发式发送",
+  "triggered": true
+ },
+ "GameStatus": {
+  "hz": 5.0,
+  "max_hz": 5.0,
+  "raw": "5Hz",
+  "triggered": false
+ },
+ "GlobalLogisticsStatus": {
+  "hz": 1.0,
+  "max_hz": 1.0,
+  "raw": "1Hz",
+  "triggered": false
+ },
+ "GlobalSpecialMechanism": {
+  "hz": 1.0,
+  "max_hz": 1.0,
+  "raw": "1Hz",
+  "triggered": false
+ },
+ "GlobalUnitStatus": {
+  "hz": 1.0,
+  "max_hz": 1.0,
+  "raw": "1Hz",
+  "triggered": false
+ },
+ "KeyboardMouseControl": {
+  "hz": 75.0,
+  "max_hz": 75.0,
+  "raw": "75Hz",
+  "triggered": false
+ },
+ "MapClickCmd": {
+  "hz": 0.0,
+  "max_hz": 0.0,
+  "raw": "触发式发送",
+  "triggered": true
+ },
+ "MapClickInfo": {
+  "hz": 0.0,
+  "max_hz": 0.0,
+  "raw": "触发式发送",
+  "triggered": true
+ },
+ "PenaltyInfo": {
+  "hz": 0.0,
+  "max_hz": 0.0,
+  "raw": "触发式发送",
+  "triggered": true
+ },
+ "RadarInfoToClient": {
+  "hz": 0.0,
+  "max_hz": 0.0,
+  "raw": "触发式发送",
+  "triggered": true
+ },
+ "RobotDynamicStatus": {
+  "hz": 10.0,
+  "max_hz": 10.0,
+  "raw": "10Hz",
+  "triggered": false
+ },
+ "RobotInjuryStat": {
+  "hz": 1.0,
+  "max_hz": 1.0,
+  "raw": "1Hz",
+  "triggered": false
+ },
+ "RobotModuleStatus": {
+  "hz": 1.0,
+  "max_hz": 1.0,
+  "raw": "1Hz",
+  "triggered": false
+ },
+ "RobotPathPlanInfo": {
+  "hz": 0.0,
+  "max_hz": 0.0,
+  "raw": "触发式发送",
+  "triggered": true
+ },
+ "RobotPerformanceSelectionCommand": {
+  "hz": 0.0,
+  "max_hz": 10.0,
+  "raw": "触发式发送，发送频率最高为10Hz",
+  "triggered": true
+ },
+ "RobotPerformanceSelectionSync": {
+  "hz": 1.0,
+  "max_hz": 1.0,
+  "raw": "1Hz",
+  "triggered": false
+ },
+ "RobotPosition": {
+  "hz": 1.0,
+  "max_hz": 1.0,
+  "raw": "1Hz",
+  "triggered": false
+ },
+ "RobotRespawnStatus": {
+  "hz": 1.0,
+  "max_hz": 1.0,
+  "raw": "1Hz",
+  "triggered": false
+ },
+ "RobotStaticStatus": {
+  "hz": 1.0,
+  "max_hz": 1.0,
+  "raw": "1Hz",
+  "triggered": false
+ },
+ "RuneActivateCommand": {
+  "hz": 0.0,
+  "max_hz": 10.0,
+  "raw": "触发式发送，发送频率最高为10Hz",
+  "triggered": true
+ },
+ "RuneStatusSync": {
+  "hz": 1.0,
+  "max_hz": 1.0,
+  "raw": "1Hz",
+  "triggered": false
+ },
+ "SentryCtrlCommand": {
+  "hz": 0.0,
+  "max_hz": 10.0,
+  "raw": "触发式发送，发送频率最高为10Hz",
+  "triggered": true
+ },
+ "SentryCtrlResult": {
+  "hz": 0.0,
+  "max_hz": 0.0,
+  "raw": "触发式发送",
+  "triggered": true
+ },
+ "SentryStatusSync": {
+  "hz": 1.0,
+  "max_hz": 1.0,
+  "raw": "1Hz",
+  "triggered": false
+ },
+ "TechCoreMotionStateSync": {
+  "hz": 1.0,
+  "max_hz": 1.0,
+  "raw": "1Hz",
+  "triggered": false
+ }
+}

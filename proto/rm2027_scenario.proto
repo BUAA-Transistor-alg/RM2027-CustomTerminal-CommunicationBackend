@@ -1,0 +1,21 @@
+syntax = "proto3";
+package rm2027.internal;
+
+import "google/protobuf/struct.proto";
+
+// 测试场景文件（JSON），用于驱动「服务器」按确定的值发布下行消息：
+// {
+//   "steps": [
+//     { "topic": "GameStatus", "data": { "currentRound": 7, "totalRounds": 9, ... } },
+//     ...
+//   ]
+// }
+// data 用 Struct 承载，因此 C++ 侧无需手写 JSON 解析器。
+message ScenarioStep {
+    string topic = 1;
+    google.protobuf.Struct data = 2;
+}
+
+message Scenario {
+    repeated ScenarioStep steps = 1;
+}

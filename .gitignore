@@ -1,0 +1,48 @@
+# ---- 构建产物 ----
+build/
+build-*/
+cmake-build-*/
+*.o
+*.a
+*.so
+*.so.*
+*.dylib
+*.dll
+
+# ---- third_party 的构建产物（只入库获取方式，见 third_party/README.md）----
+third_party/protobuf-21.12/
+third_party/build-protobuf/
+third_party/**/*.tar.gz
+
+# ---- 测试 / 运行产物 ----
+tests/out/
+python/out/
+tests/media/
+*.h265
+*.ppm
+*.ppm.gz
+*.gray
+*.mp4
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+
+# ---- Node（交叉验证测试）----
+node_modules/
+
+# ---- 编辑器 / 系统 ----
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# ---- 本地临时文件 ----
+.dsh_tmp/
+*.log

@@ -1,0 +1,77 @@
+{
+  "steps": [
+    {
+      "topic": "KeyboardMouseControl",
+      "data": {
+        "mouse_x": 1100,
+        "mouse_y": 2100,
+        "mouse_z": 3100,
+        "left_button_down": true,
+        "right_button_down": true,
+        "keyboard_value": 6100,
+        "mid_button_down": true
+      }
+    },
+    {
+      "topic": "CustomControl",
+      "data": {
+        "data": "Aas="
+      }
+    },
+    {
+      "topic": "MapClickCmd",
+      "data": {
+        "is_send_all": 1300,
+        "robot_id": "Aqs=",
+        "mode": 3300,
+        "enemy_id": 4300,
+        "ascii": 5300,
+        "type": 6300,
+        "map_x": 310.5,
+        "map_y": 312.0
+      }
+    },
+    {
+      "topic": "AssemblyCommand",
+      "data": {
+        "operation": 1400,
+        "difficulty": 2400
+      }
+    },
+    {
+      "topic": "RobotPerformanceSelectionCommand",
+      "data": {
+        "shooter": 1500,
+        "chassis": 2500,
+        "sentry_control": 3500
+      }
+    },
+    {
+      "topic": "CommonCommand",
+      "data": {
+        "cmd_type": 1600,
+        "param": 2600
+      }
+    },
+    {
+      "topic": "RuneActivateCommand",
+      "data": {
+        "activate": 1700
+      }
+    },
+    {
+      "topic": "DartCommand",
+      "data": {
+        "target_id": 1800,
+        "open": true,
+        "launch_confirm": true
+      }
+    },
+    {
+      "topic": "SentryCtrlCommand",
+      "data": {
+        "command_id": 1900
+      }
+    }
+  ]
+}

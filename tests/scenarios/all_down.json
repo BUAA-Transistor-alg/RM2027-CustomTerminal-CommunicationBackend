@@ -1,0 +1,286 @@
+{
+  "steps": [
+    {
+      "topic": "GameStatus",
+      "data": {
+        "current_round": 1100,
+        "total_rounds": 2100,
+        "red_score": 3100,
+        "blue_score": 4100,
+        "current_stage": 5100,
+        "stage_countdown_sec": 6100,
+        "stage_elapsed_sec": 7100,
+        "is_paused": true,
+        "game_result": 9100,
+        "end_reason": 10100
+      }
+    },
+    {
+      "topic": "GlobalUnitStatus",
+      "data": {
+        "base_health": 1200,
+        "base_status": 2200,
+        "base_shield": 3200,
+        "outpost_R_health": 4200,
+        "outpost_R_status": 5200,
+        "enemy_base_health": 6200,
+        "enemy_base_status": 7200,
+        "enemy_base_shield": 8200,
+        "outpost_B_health": 9200,
+        "outpost_B_status": 10200,
+        "robot_health": [
+          11200,
+          11200
+        ],
+        "robot_bullets": [
+          12200,
+          12200
+        ],
+        "total_damage_ally": 13200,
+        "total_damage_enemy": 14200,
+        "total_CP_ally": 15200,
+        "total_CP_enemy": 16200
+      }
+    },
+    {
+      "topic": "GlobalLogisticsStatus",
+      "data": {
+        "remaining_economy": 1300,
+        "total_economy_obtained": 2300,
+        "tech_level": 3300,
+        "encryption_level": 4300
+      }
+    },
+    {
+      "topic": "GlobalSpecialMechanism",
+      "data": {
+        "mechanism_id": [
+          1400,
+          1400
+        ],
+        "mechanism_time_sec": [
+          2400,
+          2400
+        ]
+      }
+    },
+    {
+      "topic": "Event",
+      "data": {
+        "event_id": 1500,
+        "param": "s2"
+      }
+    },
+    {
+      "topic": "RobotInjuryStat",
+      "data": {
+        "total_damage": 1600,
+        "collision_damage": 2600,
+        "small_projectile_damage": 3600,
+        "large_projectile_damage": 4600,
+        "dart_splash_damage": 5600,
+        "module_offline_damage": 6600,
+        "offline_damage": 7600,
+        "penalty_damage": 8600,
+        "server_kill_damage": 9600,
+        "killer_id": 10600
+      }
+    },
+    {
+      "topic": "RobotRespawnStatus",
+      "data": {
+        "is_pending_respawn": true,
+        "total_respawn_progress": 2700,
+        "current_respawn_progress": 3700,
+        "can_free_respawn": true,
+        "gold_cost_for_respawn": 5700,
+        "can_pay_for_respawn": true
+      }
+    },
+    {
+      "topic": "RobotStaticStatus",
+      "data": {
+        "connection_state": 1800,
+        "field_state": 2800,
+        "alive_state": 3800,
+        "robot_id": 4800,
+        "robot_type": 5800,
+        "performance_system_shooter": 6800,
+        "performance_system_chassis": 7800,
+        "level": 8800,
+        "max_health": 9800,
+        "max_heat": 10800,
+        "heat_cooldown_rate": 816.5,
+        "max_power": 12800,
+        "max_buffer_energy": 13800,
+        "max_chassis_energy": 14800
+      }
+    },
+    {
+      "topic": "RobotDynamicStatus",
+      "data": {
+        "current_health": 1900,
+        "current_heat": 903.0,
+        "last_projectile_fire_rate": 904.5,
+        "reserved": 4900,
+        "current_buffer_energy": 5900,
+        "current_experience": 6900,
+        "experience_for_upgrade": 7900,
+        "total_projectiles_fired": 8900,
+        "remaining_ammo": 9900,
+        "is_out_of_combat": true,
+        "out_of_combat_countdown": 11900,
+        "can_remote_heal": true,
+        "can_remote_ammo": true
+      }
+    },
+    {
+      "topic": "RobotModuleStatus",
+      "data": {
+        "power_manager": 2000,
+        "rfid": 3000,
+        "light_strip": 4000,
+        "small_shooter": 5000,
+        "big_shooter": 6000,
+        "uwb": 7000,
+        "armor": 8000,
+        "video_transmission": 9000,
+        "capacitor": 10000,
+        "main_controller": 11000,
+        "modular_42mm": 12000
+      }
+    },
+    {
+      "topic": "RobotPosition",
+      "data": {
+        "x": 1101.5,
+        "y": 1103.0,
+        "z": 1104.5,
+        "yaw": 1106.0,
+        "robot_id": 6100
+      }
+    },
+    {
+      "topic": "Buff",
+      "data": {
+        "robot_id": 2200,
+        "buff_type": 3200,
+        "buff_level": 4200,
+        "buff_max_time": 5200,
+        "buff_left_time": 6200
+      }
+    },
+    {
+      "topic": "PenaltyInfo",
+      "data": {
+        "penalty_type": 2300,
+        "penalty_effect_sec": 3300,
+        "total_penalty_num": 4300
+      }
+    },
+    {
+      "topic": "RobotPathPlanInfo",
+      "data": {
+        "intention": 2400,
+        "start_pos_x": 3400,
+        "start_pos_y": 4400,
+        "offset_x": [
+          5400,
+          5400
+        ],
+        "offset_y": [
+          6400,
+          6400
+        ],
+        "sender_id": 7400
+      }
+    },
+    {
+      "topic": "MapClickInfo",
+      "data": {
+        "is_send_all": 2500,
+        "robot_id": "Aqs=",
+        "mode": 4500,
+        "enemy_id": 5500,
+        "ascii": 6500,
+        "type": 7500,
+        "map_x": 1510.5,
+        "map_y": 1512.0
+      }
+    },
+    {
+      "topic": "RadarInfoToClient",
+      "data": {
+        "radar_single_robot_info": [
+          {
+            "target_pos_x": 2600,
+            "target_pos_y": 3600,
+            "is_high_light": 4600
+          },
+          {
+            "target_pos_x": 2600,
+            "target_pos_y": 3600,
+            "is_high_light": 4600
+          }
+        ]
+      }
+    },
+    {
+      "topic": "CustomByteBlock",
+      "data": {
+        "data": "Aas="
+      }
+    },
+    {
+      "topic": "TechCoreMotionStateSync",
+      "data": {
+        "maximum_difficulty_level": 2800,
+        "basic_state": 3800,
+        "putin_state": 4800,
+        "move_state": 5800,
+        "rotate_state": 6800,
+        "enemy_core_status": 7800,
+        "remain_time_all": 8800,
+        "remain_time_step": 9800
+      }
+    },
+    {
+      "topic": "RobotPerformanceSelectionSync",
+      "data": {
+        "shooter": 2900,
+        "chassis": 3900,
+        "sentry_control": 4900
+      }
+    },
+    {
+      "topic": "RuneStatusSync",
+      "data": {
+        "rune_status": 3000,
+        "activated_arms": 4000,
+        "average_rings": 2004.5
+      }
+    },
+    {
+      "topic": "SentryStatusSync",
+      "data": {
+        "posture_id": 3100,
+        "is_weakened": true,
+        "is_powered": true
+      }
+    },
+    {
+      "topic": "DartSelectTargetStatusSync",
+      "data": {
+        "target_id": 3200,
+        "open": 4200
+      }
+    },
+    {
+      "topic": "SentryCtrlResult",
+      "data": {
+        "command_id": 3300,
+        "result_code": 4300
+      }
+    }
+  ]
+}
