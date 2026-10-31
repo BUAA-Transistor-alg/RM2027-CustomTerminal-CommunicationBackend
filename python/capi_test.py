@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""纯 C 接口（经 ctypes）的功能验证：元数据 + 双向收发 + 嵌套消息 + 字段名。"""
+"""纯 C 接口（经 ctypes）的功能验证：元数据 + 双向收发 + 嵌套消息 + 字段名 + 协议约束。"""
+import base64
 import json
 import os
 import sys
@@ -11,11 +12,27 @@ import rm2027c as rm
 PORT = int(os.environ.get("CAPI_TEST_PORT", "13710"))
 FAIL = []
 
+# 官方 §2.2.17/2.2.18：MapClick robot_id 固定 7 字节（不足补 0）
+ROBOT_ID_7B = base64.b64encode(bytes([1, 2, 3, 0, 0, 0, 0])).decode("ascii")
+
 
 def check(cond, msg):
     print(("  ✅ " if cond else "  ❌ ") + msg)
     if not cond:
         FAIL.append(msg)
+
+
+def expect_reject(desc, fn, *keys):
+    """发送不合规消息必须抛 RuntimeError，且错误信息里带校验原因关键词。"""
+    try:
+        fn()
+    except RuntimeError as e:
+        text = str(e)
+        missing = [k for k in keys if k not in text]
+        check(not missing,
+              "%s 被拒绝，原因含 %s（%s）" % (desc, "/".join(keys), text[:110]))
+    else:
+        check(False, "%s 应当被拒绝（RuntimeError）" % desc)
 
 
 def main():
@@ -53,7 +70,7 @@ def main():
 
     cli.send("DartCommand", {"target_id": 1, "open": True, "launch_confirm": True})
     cli.send("CommonCommand", {"cmd_type": 1, "param": 20})
-    cli.send("MapClickCmd", {"is_send_all": 2, "robot_id": "AQID", "mode": 1,
+    cli.send("MapClickCmd", {"is_send_all": 2, "robot_id": ROBOT_ID_7B, "mode": 1,
                              "enemy_id": 11, "map_x": 1.5, "map_y": -2.5})
 
     # 等客户端把「要发的这几个 topic」订阅好再发。客户端是逐条订阅的，
@@ -74,9 +91,10 @@ def main():
     srv.send("GlobalUnitStatus", {"base_shield": 2, "outpost_R_health": 4200,
                                   "outpost_B_status": 3, "total_CP_ally": 77})
     srv.send("RobotDynamicStatus", {"current_health": 500, "reserved": 1})
-    srv.send("RadarInfoToClient", {"radar_single_robot_info": [
-        {"target_pos_x": 100, "target_pos_y": 200, "is_high_light": 1},
-        {"target_pos_x": 300, "target_pos_y": 400, "is_high_light": 0}]})
+    # 官方 §2.2.19：雷达每方 1/3/4/7 号，共 8 个目标（发送路径校验 8 个）
+    radar_targets = [{"target_pos_x": 100 + i, "target_pos_y": 200 + i,
+                      "is_high_light": i % 2} for i in range(8)]
+    srv.send("RadarInfoToClient", {"radar_single_robot_info": radar_targets})
     time.sleep(1.0)
 
     names_up = [n for n, _, _ in up]
@@ -104,13 +122,52 @@ def main():
     rd = got["RobotDynamicStatus"]
     check("reserved" in rd and "current_chassis_energy" not in rd,
           "RobotDynamicStatus 字段 4 = reserved（旧字段 current_chassis_energy 已删除）")
-    check(len(got["RadarInfoToClient"]["radar_single_robot_info"]) == 2, "嵌套 repeated 2 个元素")
-    check(got["RadarInfoToClient"]["radar_single_robot_info"][1]["target_pos_x"] == 300,
-          "嵌套元素字段值正确")
+    rinfo = got["RadarInfoToClient"]["radar_single_robot_info"]
+    check(len(rinfo) == 8, "嵌套 repeated 8 个元素（官方雷达 8 目标）")
+    check(rinfo[0]["target_pos_x"] == 100 and rinfo[0]["target_pos_y"] == 200
+          and rinfo[0]["is_high_light"] == 0, "首元素字段值正确")
+    check(rinfo[-1]["target_pos_x"] == 107 and rinfo[-1]["target_pos_y"] == 207
+          and rinfo[-1]["is_high_light"] == 1, "末元素字段值正确")
 
     print("== bytes 字段 ==")
     mp = {n: d for n, d, _ in up}.get("MapClickCmd", {})
-    check(mp.get("robot_id") == "AQID", "bytes robot_id 往返一致（base64 AQID = 01 02 03）")
+    rid_roundtrip = base64.b64decode(mp.get("robot_id", ""))
+    check(mp.get("robot_id") == ROBOT_ID_7B and len(rid_roundtrip) == 7,
+          "bytes robot_id 往返一致且为 7 字节（base64 %s -> %s）"
+          % (ROBOT_ID_7B, rid_roundtrip.hex()))
+
+    print("== 协议约束校验（只在发送路径生效）==")
+    # a) CustomControl.data 上限 60 字节：61 字节必须被拒绝
+    cc61 = base64.b64encode(b"\x3d" * 61).decode("ascii")
+    expect_reject("CustomControl.data 61 字节",
+                  lambda: cli.send("CustomControl", {"data": cc61}),
+                  "CustomControl", "长度", "61", "60")
+    # b) MapClickCmd.robot_id 固定 7 字节：6 字节必须被拒绝
+    bad_rid = base64.b64encode(bytes([1, 2, 3, 0, 0, 0])).decode("ascii")
+    expect_reject("MapClickCmd.robot_id 6 字节",
+                  lambda: cli.send("MapClickCmd", {"robot_id": bad_rid}),
+                  "robot_id", "长度", "6", "7")
+    # c) RadarInfoToClient 非空必须 8 个目标：7 个必须被拒绝
+    expect_reject("RadarInfoToClient 7 个元素",
+                  lambda: srv.send("RadarInfoToClient", {"radar_single_robot_info": [
+                      {"target_pos_x": i} for i in range(7)]}),
+                  "radar_single_robot_info", "长度", "7", "8")
+    # d) 边界值 60 字节必须成功（并真的到达服务器）
+    cc60 = base64.b64encode(b"\x3c" * 60).decode("ascii")
+    cli.send("CustomControl", {"data": cc60})
+    t0 = time.time()
+    while time.time() - t0 < 3 and not any(
+            n == "CustomControl" and d.get("data") == cc60 for n, d, _ in up):
+        time.sleep(0.02)
+    check(any(n == "CustomControl" and d.get("data") == cc60 for n, d, _ in up),
+          "CustomControl.data 60 字节边界值发送成功")
+    # 被拒绝的消息不能「报错但已发出」：对端各只应收到 1 条合法消息
+    check(not any(n == "CustomControl" and d.get("data") == cc61 for n, d, _ in up),
+          "被拒绝的 61 字节 CustomControl 未到达服务器")
+    check(sum(1 for n, _, _ in up if n == "MapClickCmd") == 1,
+          "被拒绝的 6 字节 robot_id MapClickCmd 未到达服务器（服务器只收到 1 条）")
+    check(sum(1 for n, _ in down if n == "RadarInfoToClient") == 1,
+          "被拒绝的 7 元素 RadarInfoToClient 未到达客户端（客户端只收到 1 条）")
 
     print("== 错误处理 ==")
     try:

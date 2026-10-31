@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "rm2027/api/detail/registry.h"
+#include "rm2027/api/validate.h"
 #include "rm2027/common/log.h"
 #include "rm2027/protocol/codec.h"
 
@@ -218,12 +219,11 @@ struct Client::Impl : public mqtt::callback {
             return;
         }
         std::string err;
-        auto proto = decodeMessage(desc->descriptor, payload.data(), payload.size(), &err);
-        if (!proto) {
+        auto native = fromWire(*desc, payload.data(), payload.size(), &err);
+        if (!native) {
             RM_WARN("client", "解码失败 " << topic << ": " << err);
             return;
         }
-        auto native = desc->decode(*proto);
         if (opt.logMessages) {
             RM_INFO("client", "↓ " << topic << " (" << payload.size() << " B)");
         }
@@ -395,6 +395,11 @@ bool Client::send(const std::string &name, std::unique_ptr<Message> msg) {
     }
     if (!impl_->connectedFlag.load()) {
         RM_WARN("client", "send: 未连接，丢弃 " << name << "（后台仍在重连）");
+        return false;
+    }
+    std::string verr;
+    if (!validateMessage(*msg, &verr)) {
+        RM_ERROR("client", "send: 指令不符合官方协议约束 " << name << ": " << verr);
         return false;
     }
     std::string payload;

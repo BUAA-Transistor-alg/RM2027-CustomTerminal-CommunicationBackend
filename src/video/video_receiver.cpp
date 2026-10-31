@@ -118,7 +118,7 @@ bool VideoReceiver::start(std::string *error) {
     decodeThread_ = std::thread([this] { decodeLoop(); });
 
     RM_INFO("video-rx", "图传接收端已启动: udp://" << opt_.bindHost << ":" << opt_.port
-                                                   << " (包头 " << udpHeaderEndianName() << ")");
+                                                   << " (包头: 大端，官方 2027 协议 §2 规定)");
     return true;
 }
 

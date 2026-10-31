@@ -17,6 +17,7 @@
 
 #include "rm2027/api/client.h"
 #include "rm2027/api/message.h"
+#include "rm2027/api/wire_format.h"
 #include "rm2027/api/scenario.h"
 #include "rm2027/api/messages.h"
 #include "rm2027/common/log.h"
@@ -77,6 +78,8 @@ void usage(const char *argv0) {
         "  --publish-scenario <f>    发送该场景文件里的上行指令\n"
         "  --publish-interval <ms>   上行发送间隔，默认 100\n"
         "  --duration <sec>          运行指定秒数后退出，0 = 一直运行，默认 0\n"
+        "  --radar-wire-format <nested|flat>  RadarInfoToClient 线格式，默认 nested\n"
+        "                           收发两端必须一致；详见 README「雷达线格式」\n"
         "  --log <debug|info|warn|error>  日志等级，默认 info（日志走 stderr）\n"
         "  -h, --help               显示帮助\n"
         "\n说明: stdout 只输出结构化 JSON 记录，人类可读日志在 stderr。\n",
@@ -110,6 +113,16 @@ int main(int argc, char **argv) {
         else if (a == "--publish-scenario") publishScenario = next("--publish-scenario");
         else if (a == "--publish-interval") publishIntervalMs = std::stoi(next("--publish-interval"));
         else if (a == "--duration") durationSec = std::stoi(next("--duration"));
+        else if (a == "--radar-wire-format") {
+            const std::string v = next("--radar-wire-format");
+            rm2027::RadarWireFormat fmt;
+            if (!rm2027::parseRadarWireFormat(v.c_str(), &fmt)) {
+                std::fprintf(stderr, "无效的 --radar-wire-format: %s（可选 nested / flat）\n",
+                             v.c_str());
+                return 2;
+            }
+            rm2027::setRadarWireFormat(fmt);
+        }
         else if (a == "--log") {
             const std::string lv = next("--log");
             if (lv == "debug") rm2027::setLogLevel(rm2027::LogLevel::Debug);

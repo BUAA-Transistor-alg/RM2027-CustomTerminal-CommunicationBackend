@@ -9,13 +9,12 @@
 //     当前帧总字节数       4 byte
 //   并且【此额外添加的 8 个字节为大端传输】。
 //
-// 所以本实现默认大端（可用 CMake 选项 -DRM_UDP_HEADER_BIG_ENDIAN=OFF 切到小端，
-// 仅用于验证「字节序确实参与解析」，见 tests/check_endian.sh）。
+// 官方 2027 通信协议 V1.0.0（20261029）§2 明文规定大端；本实现只支持大端，
+// 不提供字节序开关（既不编译其他字节序变体，也不做运行期切换）。
 #pragma once
 
 #include <cstddef>
 #include <cstdint>
-#include <string>
 
 namespace rm2027 {
 
@@ -27,18 +26,7 @@ struct UdpVideoHeader {
 
 constexpr std::size_t kUdpVideoHeaderSize = 8;
 
-// 编译期字节序选择
-constexpr bool udpHeaderBigEndian() {
-#if defined(RM_UDP_HEADER_BIG_ENDIAN) && RM_UDP_HEADER_BIG_ENDIAN
-    return true;
-#else
-    return false;
-#endif
-}
-
-const char *udpHeaderEndianName();
-
-// 写入/读取 8 字节包头
+// 写入/读取 8 字节包头（固定大端，见官方 §2）
 void writeUdpVideoHeader(uint8_t out[kUdpVideoHeaderSize], const UdpVideoHeader &h);
 UdpVideoHeader readUdpVideoHeader(const uint8_t in[kUdpVideoHeaderSize]);
 

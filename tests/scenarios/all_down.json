@@ -30,7 +30,13 @@
         "outpost_B_status": 10200,
         "robot_health": [
           11200,
-          11200
+          11201,
+          11202,
+          11203,
+          11204,
+          11205,
+          11206,
+          11207
         ],
         "robot_bullets": [
           12200,
@@ -199,7 +205,7 @@
       "topic": "MapClickInfo",
       "data": {
         "is_send_all": 2500,
-        "robot_id": "Aqs=",
+        "robot_id": "AqsAAAAAAA==",
         "mode": 4500,
         "enemy_id": 5500,
         "ascii": 6500,
@@ -218,9 +224,39 @@
             "is_high_light": 4600
           },
           {
-            "target_pos_x": 2600,
-            "target_pos_y": 3600,
-            "is_high_light": 4600
+            "target_pos_x": 2601,
+            "target_pos_y": 3601,
+            "is_high_light": 4601
+          },
+          {
+            "target_pos_x": 2602,
+            "target_pos_y": 3602,
+            "is_high_light": 4602
+          },
+          {
+            "target_pos_x": 2603,
+            "target_pos_y": 3603,
+            "is_high_light": 4603
+          },
+          {
+            "target_pos_x": 2604,
+            "target_pos_y": 3604,
+            "is_high_light": 4604
+          },
+          {
+            "target_pos_x": 2605,
+            "target_pos_y": 3605,
+            "is_high_light": 4605
+          },
+          {
+            "target_pos_x": 2606,
+            "target_pos_y": 3606,
+            "is_high_light": 4606
+          },
+          {
+            "target_pos_x": 2607,
+            "target_pos_y": 3607,
+            "is_high_light": 4607
           }
         ]
       }

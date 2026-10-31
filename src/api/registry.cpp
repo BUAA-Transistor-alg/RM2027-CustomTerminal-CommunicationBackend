@@ -1,9 +1,12 @@
 // RM2027 对外 API —— 消息表查询与序列化的实现
 #include <algorithm>
+#include <cstring>
 
 #include "rm2027/api/detail/registry.h"
 #include "rm2027/api/message.h"
+#include "rm2027/api/wire_format.h"
 #include "rm2027/protocol/codec.h"
+#include "rm2027_radar_flat.pb.h"
 
 namespace rm2027 {
 
@@ -57,12 +60,33 @@ std::unique_ptr<Message> createMessage(const std::string &name) {
     return d ? d->create() : nullptr;
 }
 
+const google::protobuf::Descriptor *wireDescriptor(const MessageDesc &desc) {
+    // 目前只有 RadarInfoToClient 存在两种线格式；其余消息恒用官方 proto 的定义。
+    if (desc.name != nullptr && std::strcmp(desc.name, "RadarInfoToClient") == 0 &&
+        radarWireFormat() == RadarWireFormat::FlatPackedUint32) {
+        return rm_radar_flat::RadarInfoToClient::descriptor();
+    }
+    return desc.descriptor;
+}
+
 std::string toBinary(const Message &msg) {
     const MessageDesc *d = findMessage(msg.name());
     if (d == nullptr) return std::string();
     std::string out;
     if (!d->encode(msg, &out)) return std::string();
     return out;
+}
+
+std::unique_ptr<Message> fromWire(const MessageDesc &desc, const void *data, std::size_t size,
+                                  std::string *error) {
+    auto proto = decodeMessage(wireDescriptor(desc), data, size, error);
+    if (!proto) return nullptr;
+    auto native = desc.decode(*proto);
+    if (!native && error) {
+        *error = "内容不合法: " + std::string(desc.name) + "（" +
+                 radarWireFormatName(radarWireFormat()) + " 线格式）";
+    }
+    return native;
 }
 
 std::unique_ptr<Message> fromBinary(const std::string &name, const void *data, std::size_t size,
@@ -72,16 +96,17 @@ std::unique_ptr<Message> fromBinary(const std::string &name, const void *data, s
         if (error) *error = "未知指令: " + name;
         return nullptr;
     }
-    auto proto = decodeMessage(d->descriptor, data, size, error);
-    if (!proto) return nullptr;
-    return d->decode(*proto);
+    return fromWire(*d, data, size, error);
 }
 
 std::string toJson(const Message &msg) {
     const MessageDesc *d = findMessage(msg.name());
     if (d == nullptr) return "{}";
+    // JSON / 日志始终使用**规范（嵌套 message）**形式，与当前线格式开关无关，
+    // 这样同一个场景文件/记录格式在 nested 与 flat 两种线格式下完全一致。
     std::string bin;
-    if (!d->encode(msg, &bin)) return "{}";
+    const bool ok = d->encode_canonical ? d->encode_canonical(msg, &bin) : d->encode(msg, &bin);
+    if (!ok) return "{}";
     auto proto = decodeMessage(d->descriptor, bin.data(), bin.size());
     if (!proto) return "{}";
     return toCanonicalJson(*proto);
@@ -94,6 +119,7 @@ std::unique_ptr<Message> fromJson(const std::string &name, const std::string &js
         if (error) *error = "未知指令: " + name;
         return nullptr;
     }
+    // 场景/JSON 输入同样是规范（嵌套）形式；接收端解码才由线格式开关决定。
     auto proto = rm2027::fromJson(d->descriptor, json, error);
     if (!proto) return nullptr;
     return d->decode(*proto);

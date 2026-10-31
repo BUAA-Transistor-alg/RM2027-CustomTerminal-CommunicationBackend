@@ -17,6 +17,7 @@
 #include "rm2027/api/messages.h"
 #include "rm2027/api/message.h"
 #include "rm2027/api/scenario.h"
+#include "rm2027/api/wire_format.h"
 #include "rm2027/api/server.h"
 #include "rm2027/common/log.h"
 #include "rm2027_scenario.pb.h"
@@ -76,6 +77,9 @@ void usage(const char *argv0) {
         "  --wait-clients <ms>      等待客户端超时，默认 15000\n"
         "  --linger <ms>            场景发完后的驻留时间，默认 8000，0 = 立即退出\n"
         "  --list                   列出全部指令后退出\n"
+        "  --radar-wire-format <nested|flat>  RadarInfoToClient 线格式，默认 nested\n"
+        "                           nested = 嵌套 message（社区实现主流）；\n"
+        "                           flat   = 官方 PDF §2.2.19 字面 packed uint32（24 个值）\n"
         "  --log <debug|info|warn|error>  日志等级，默认 info\n"
         "  -h, --help               显示帮助\n",
         argv0);
@@ -108,6 +112,16 @@ int main(int argc, char **argv) {
         else if (a == "--start-after") startAfter = std::stoi(next("--start-after"));
         else if (a == "--wait-clients") waitClientsMs = std::stoi(next("--wait-clients"));
         else if (a == "--linger") lingerMs = std::stoi(next("--linger"));
+        else if (a == "--radar-wire-format") {
+            const std::string v = next("--radar-wire-format");
+            rm2027::RadarWireFormat fmt;
+            if (!rm2027::parseRadarWireFormat(v.c_str(), &fmt)) {
+                std::fprintf(stderr, "无效的 --radar-wire-format: %s（可选 nested / flat）\n",
+                             v.c_str());
+                return 2;
+            }
+            rm2027::setRadarWireFormat(fmt);
+        }
         else if (a == "--log") {
             const std::string lv = next("--log");
             if (lv == "debug") rm2027::setLogLevel(rm2027::LogLevel::Debug);

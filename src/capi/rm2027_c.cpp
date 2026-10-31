@@ -12,6 +12,8 @@
 #include "rm2027/api/detail/registry.h"
 #include "rm2027/api/message.h"
 #include "rm2027/api/server.h"
+#include "rm2027/api/validate.h"
+#include "rm2027/api/wire_format.h"
 #include "rm2027/video/video_receiver.h"
 #include "rm2027/video/video_sender.h"
 
@@ -279,7 +281,8 @@ int rm_client_send(rm_handle handle, const char *name, const char *json) {
     std::string err;
     auto msg = fromJson(name, json, &err);
     if (!msg) return fail("构造指令失败: " + err);
-    std::string sendErr;
+    std::string verr;
+    if (!validateMessage(*msg, &verr)) return fail("指令不符合协议约束: " + verr);
     if (!h->client->send(std::move(msg))) return fail("发送失败: " + std::string(name));
     return 0;
 }
@@ -353,6 +356,8 @@ int rm_server_send(rm_handle handle, const char *name, const char *json) {
     std::string err;
     auto msg = fromJson(name, json, &err);
     if (!msg) return fail("构造指令失败: " + err);
+    std::string verr;
+    if (!validateMessage(*msg, &verr)) return fail("指令不符合协议约束: " + verr);
     if (!h->server->send(std::move(msg))) return fail("发送失败: " + std::string(name));
     return 0;
 }
@@ -403,7 +408,18 @@ void rm_set_event_cb(rm_handle handle, rm_event_cb cb, void *user) {
 
 const char *rm_last_error(void) { return lastError().c_str(); }
 
-const char *rm_version(void) { return "rm2027-capi/1.1 (protocol V1.0.0 20261029)"; }
+const char *rm_version(void) { return "rm2027-capi/1.2 (protocol V1.0.0 20261029)"; }
+
+// ---------------------------------------------------------------- 雷达线格式
+
+int rm_set_radar_wire_format(int format) {
+    if (format != 0 && format != 1) return fail("雷达线格式只能是 0(nested) 或 1(flat)");
+    setRadarWireFormat(format == 0 ? RadarWireFormat::NestedMessage
+                                   : RadarWireFormat::FlatPackedUint32);
+    return 0;
+}
+
+int rm_get_radar_wire_format(void) { return static_cast<int>(radarWireFormat()); }
 
 // ================================================================ 图传
 

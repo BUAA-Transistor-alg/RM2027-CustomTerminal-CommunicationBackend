@@ -167,10 +167,13 @@ message MapClickInfo {
 }
 
 message RadarInfoToClient {
+    // 默认线格式（NestedMessage）：嵌套 message。
+    // 官方 PDF §2.2.19 的字面写法（repeated uint32）见 rm2027_radar_flat.proto，
+    // 运行时用 rm2027::setRadarWireFormat() 切换。
     repeated RadarSingleRobotInfo radar_single_robot_info = 1;
 
     // 元素结构：一次发送 8 个目标，顺序为「对方 1/3/4/7 号，己方 1/3/4/7 号」
-    // 坐标单位 cm（更早版本是 float 米）
+    // 坐标单位 cm
     message RadarSingleRobotInfo {
         optional uint32 target_pos_x = 1;
         optional uint32 target_pos_y = 2;

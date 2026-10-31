@@ -15,6 +15,8 @@ RoboMaster 2027 高校系列赛「自定义终端」通信协议的 C++ 实现�
 | MQTT | broker `192.168.12.1:3333`，qos 1，topic = 指令名；自定义终端 IP `192.168.12.2` |
 | 图传 | UDP `3334`，HEVC/H.265，60fps，1920×1080，无重传 |
 | UDP 包头 | 8 字节**大端**：帧编号(u16) + 分片序号(u16) + 当前帧总字节数(u32)；单包 ≤ 1400 B（负载 1392 B） |
+| 雷达线格式 | `RadarInfoToClient` 支持两种线格式：默认嵌套 message，可切换为 `repeated uint32`（packed）写法——见下文「雷达线格式」 |
+| 协议约束校验 | 发送前按官方字段表校验长度/值域（CustomControl ≤60B、MapClick robot_id 7B、robot_health/radar 8 个等），不符合直接拒绝并给出原因 |
 
 > 本实现只针对 RM2027 V1.0.0 这一个版本，**不兼容 RM2026 协议**。
 > 与 RM2026 V2.0.0 的逐条差异见 [docs/V1.0.0-变更分析.md](docs/V1.0.0-变更分析.md)。
@@ -25,17 +27,17 @@ RoboMaster 2027 高校系列赛「自定义终端」通信协议的 C++ 实现�
 
 | 模块 | 能力 |
 | :-- | :-- |
-| 协议编解码 | 32 条指令的 proto 定义、消息注册表、二进制/JSON 互转；字段来自官方 PDF 字段表，与官方逐字段一致 |
+| 协议编解码 | 32 条指令的 proto 定义、消息注册表、二进制/JSON 互转；`RadarInfoToClient` 支持两种线格式（默认嵌套 message，可切 packed uint32，见下） |
 | 服务器 | **自带最小 MQTT 3.1.1 broker**（零第三方 MQTT 依赖）；下行发布、上行接收；按类型/按名字回调；可获知发送方 clientID；上下线通知 |
 | 客户端 | 基于 Paho MQTT C++；**自动重连**（指数退避 1s→5s）、断线后**重订阅**全部下行、`start()` 不阻塞、非阻塞发送（不等 PUBACK） |
 | 图传发送 | BGR 图像 → HEVC 编码 → 分片 → UDP；码率/GOP/B 帧/intra-refresh/MTU 可配；故障注入（丢包/重复/乱序） |
 | 图传接收 | UDP 重组 → 解码 → 最新帧槽位 + 统计；码流格式自动探测（h265/h264/jpeg）或手动固定；丢包后的恢复策略 |
 | C++ 接口 | 3 个公开头文件，**不接触 protobuf / MQTT**；消息用 `std::unique_ptr<结构体>` 收发，类型安全 |
-| C 接口 | `librm2027c.so`，57 个导出函数；指令内容用 **JSON 字符串**过 C 边界，ctypes / C# / Rust 均可调用 |
+| C 接口 | `librm2027c.so`，59 个导出函数；指令内容用 **JSON 字符串**过 C 边界，ctypes / C# / Rust 均可调用 |
 | Python 接口 | `rm2027c.py`（ctypes）；消息用 `dict`（snake_case 键名）；图传帧用 **numpy** 直接进出 |
 | PyQt5 面板 | 服务器面板 + 客户端面板：逐条指令开关/频率/表单编辑/JSON 编辑/接收显示/批量操作/图传预览/主题跟随 |
 | 命令行工具 | `rm_server`、`rm_client`、`rm_video_tx`、`rm_video_rx`，以及示例 `rm_api_demo` |
-| 验证体系 | `bash tests/run_all.sh` 一键 11 项验证（协议 32 条逐字段、C 接口、API、Node 交叉验证、重连、GUI、图传、压力、字节序、端到端） |
+| 验证体系 | `bash tests/run_all.sh` 一键 11 项验证（协议 32 条逐字段、C 接口、API、Node 交叉验证、重连、GUI、图传、压力、**雷达线格式**、端到端） |
 
 ---
 
@@ -111,6 +113,8 @@ bash build.sh -j4             # 指定并行度
 #include <rm2027/api/messages.h>   // 32 条指令对应的原生结构体
 #include <rm2027/api/client.h>     // 客户端
 #include <rm2027/api/server.h>     // 服务器
+// 需要切换雷达线格式时再加：
+// #include <rm2027/api/wire_format.h>   // setRadarWireFormat() / radarWireFormat()
 ```
 
 角色说明：比赛中每个自定义终端本身充当**客户端**（连裁判系统服务器）；做本地联调时用本项目
@@ -221,7 +225,8 @@ cc my_app.c -Iinclude -Lbuild -lrm2027c -Wl,-rpath,$PWD/build -o my_app
 ```
 
 图传也有对应 C 函数（`rm_video_sender_*` / `rm_video_receiver_*`），用法见
-[docs/README-full.md](docs/README-full.md) 第 4 节。导出符号共 57 个（36 个协议 + 21 个图传）。
+[docs/README-full.md](docs/README-full.md) 第 4 节。导出符号共 **59 个（38 个协议 + 21 个图传）**，
+其中雷达双线格式用 `rm_set_radar_wire_format()` / `rm_get_radar_wire_format()`。
 
 ### 3. Python 接口
 
@@ -268,6 +273,122 @@ print(rx.stats)
 
 > 回调在 C++ 的工作线程里执行。做 Qt 界面时请用信号转到主线程，不要直接操作控件
 > （参考 [python/gui/bridge.py](python/gui/bridge.py)）。
+
+---
+
+## 雷达线格式（RadarInfoToClient）
+
+### 两种线格式
+
+官方 2027 V1.0.0 §2.2.19（印刷 p.67–68）的 proto 代码块与字段表是：
+
+```
+message RadarInfoToClient {
+     repeated uint32 RadarSingleRobotInfo;
+}
+message RadarSingleRobotInfo { optional uint32 target_pos_x = 1; ... }
+```
+
+其中 `repeated uint32 RadarSingleRobotInfo;` 缺少字段号，**这段声明本身不是合法的 proto**；同节字段表又把
+1 号字段描述为 `repeated uint32`，每个元素包含 x / y / is_high_light 三个 uint32。因此存在两种解读：
+
+- **`flat`**：按代码块字面理解为字段 1 的 packed repeated uint32——8 个目标 × 3 个值 = **24 个 uint32**；
+- **`nested`（默认）**：按字段表的结构化描述——一个 `RadarSingleRobotInfo` 结构数组（8 个元素）。
+
+**常见的开源实现与其不同**：ACE、ClearWei 等采用嵌套 message 写法（字段 1 为 `repeated RadarSingleRobotInfo`），
+JFCY2718 则选择留空不实现；本项目默认的 `nested` 与前者一致，2026 互操作实测可互通
+（见 [docs/互操作验证-第三方实现.md](docs/互操作验证-第三方实现.md)）。
+
+两种线格式不能互相解析（同一组 8 个目标：`nested` 80 字节、`flat` 42 字节），因此本项目两种都实现、
+可切换；联调时以对接服务器实际发送的报文为准。
+
+### 默认值
+
+**默认 `nested`**：与既有代码、第三方实现、JSON 场景一致，不改变任何现有行为。
+对接的服务器若使用 packed 数组写法，把**收发两端都**切到 `flat` 即可。
+
+### 怎么切换
+
+> 该开关是**进程级全局设置**，收发两端必须一致；只影响 `RadarInfoToClient` 一条消息的
+> protobuf 二进制编码，**topic / qos / JSON / 日志形式都不变**（JSON 始终是嵌套结构）。
+
+**C++**（额外包含 `rm2027/api/wire_format.h`）：
+
+```cpp
+#include <rm2027/api/wire_format.h>
+
+rm2027::setRadarWireFormat(rm2027::RadarWireFormat::FlatPackedUint32); // 或 NestedMessage（默认）
+rm2027::RadarWireFormat now = rm2027::radarWireFormat();
+const char *name = rm2027::radarWireFormatName(now);                   // "nested" / "flat"
+
+rm2027::RadarWireFormat fmt;
+rm2027::parseRadarWireFormat("flat", &fmt);                            // 解析命令行/配置文件字符串
+```
+
+**C**：
+
+```c
+rm_set_radar_wire_format(1);   /* 0 = nested（默认），1 = flat */
+int mode = rm_get_radar_wire_format();
+```
+
+**Python**：
+
+```python
+import rm2027c as rm
+rm.set_radar_wire_format("flat")     # 或 "nested" / 0 / 1
+print(rm.radar_wire_format())        # "flat"
+```
+
+**命令行**（`rm_server` / `rm_client` 两个进程要设成同一个值）：
+
+```bash
+./build/rm_server --port 3333 --scenario tests/scenarios/all_down.json --radar-wire-format flat
+./build/rm_client --port 3333 --client-id 3 --radar-wire-format flat
+```
+
+### JSON / 场景文件不受影响
+
+`toJson` / 日志 / `tests/scenarios/*.json` 始终使用**嵌套形式**：
+
+```json
+{"radar_single_robot_info":[
+  {"target_pos_x":100,"target_pos_y":200,"is_high_light":1},
+  ... 共 8 个目标
+]}
+```
+
+因此同一个场景文件在两种线格式下都能用，验证脚本（`tests/check_records.py`）的期望值也不用改。
+
+### 验证
+
+```bash
+bash tests/run_radar_wire.sh
+```
+
+它做三件事：① 用原始 MQTT 报文断言 `nested` 是 8 个嵌套子消息；② 断言 `flat` 是字段 1 的
+24 个 packed uint32；③ 用 `flat` 让 server + client 跑完整 32 条往返。探针见
+[tests/radar_wire_probe.py](tests/radar_wire_probe.py)（零第三方依赖，手工解析 MQTT/protobuf）。
+
+---
+
+## 协议约束校验（发送前）
+
+发送前会按官方字段表校验以下长度 / 值域（`Server::send` / `Client::send` / C API / Python `send`）；
+不合规直接拒绝，C API 的 `rm_last_error()` / Python 的 `RuntimeError` 里带具体原因。
+接收端不做校验（对端数据尽量解析）。
+
+| 消息 | 约束 | 官方出处 |
+| :-- | :-- | :-- |
+| `CustomControl` | `data` ≤ 60 字节 | §2.2.2（图传 0x0311 载荷上限） |
+| `CustomByteBlock` | `data` ≤ 300 字节（2.4 kbit） | §2.2.20（图传 0x0310 载荷） |
+| `MapClickInfo` / `MapClickCmd` | `robot_id` 恰好 7 字节（不足补 0） | §2.2.17 / §2.2.18 |
+| `KeyboardMouseControl` | `keyboard_value` ≤ 0xFFFF（仅 bit 0–15） | §2.2.1 |
+| `GlobalUnitStatus` | `robot_health` 为空或恰好 8 个（己方 1/3/4/7 + 对方 1/3/4/7） | §2.2.4 |
+| `RadarInfoToClient` | `radar_single_robot_info` 为空或恰好 8 个目标 | §2.2.19 |
+
+> 实现见 [include/rm2027/api/validate.h](include/rm2027/api/validate.h) / [src/api/validate.cpp](src/api/validate.cpp)。
+> 边界值（如 60 字节的 `CustomControl`）是允许的；测试覆盖了边界值与被拒绝路径。
 
 ---
 
@@ -328,6 +449,9 @@ python3 python/run_client.py --lib /path/to/librm2027c.so
 ./build/rm_server --host 127.0.0.1 --port 3333 --scenario tests/scenarios/all_down.json
 ./build/rm_client --host 127.0.0.1 --port 3333 --client-id 3 \
                   --subscribe all --publish-scenario tests/scenarios/all_up.json --duration 10
+# 雷达线格式切换（收发两端要一致；默认 nested，见「雷达线格式」）
+./build/rm_server --port 3333 --scenario tests/scenarios/all_down.json --radar-wire-format flat
+./build/rm_client --port 3333 --client-id 3 --radar-wire-format flat
 ./build/rm_video_tx --port 3334 --width 1280 --height 720 --fps 30 --duration 5
 ./build/rm_video_rx --port 3334 --duration 6 --dump /tmp/rx --dump-every 20
 ```

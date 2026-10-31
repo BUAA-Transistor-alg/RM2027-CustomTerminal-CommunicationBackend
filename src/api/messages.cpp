@@ -6,8 +6,10 @@
 #include <google/protobuf/message.h>
 
 #include "rm2027/api/detail/registry.h"
+#include "rm2027/api/wire_format.h"
 #include "rm2027_client_down.pb.h"
 #include "rm2027_client_up.pb.h"
+#include "rm2027_radar_flat.pb.h"
 
 namespace rm2027 {
 namespace {
@@ -455,7 +457,7 @@ std::unique_ptr<Message> decode_MapClickCmd(const rm_client_up::MapClickCmd &p) 
 }
 
 // ================= RadarInfoToClient =================
-void encode_RadarInfoToClient(const Message &m, rm_client_down::RadarInfoToClient *p) {
+void encode_RadarInfoToClient_nested(const Message &m, rm_client_down::RadarInfoToClient *p) {
     const auto &n = static_cast<const RadarInfoToClient &>(m);
     for (const auto &e : n.radar_single_robot_info) {
         auto *x = p->add_radar_single_robot_info();
@@ -465,7 +467,7 @@ void encode_RadarInfoToClient(const Message &m, rm_client_down::RadarInfoToClien
     }
 }
 
-std::unique_ptr<Message> decode_RadarInfoToClient(const rm_client_down::RadarInfoToClient &p) {
+std::unique_ptr<Message> decode_RadarInfoToClient_nested(const rm_client_down::RadarInfoToClient &p) {
     auto n = std::make_unique<RadarInfoToClient>();
     n->radar_single_robot_info.clear();
     n->radar_single_robot_info.reserve(p.radar_single_robot_info_size());
@@ -477,6 +479,51 @@ std::unique_ptr<Message> decode_RadarInfoToClient(const rm_client_down::RadarInf
         n->radar_single_robot_info.push_back(std::move(x));
     }
     return n;
+}
+
+void encode_RadarInfoToClient_flat(const Message &m, rm_radar_flat::RadarInfoToClient *p) {
+    const auto &n = static_cast<const RadarInfoToClient &>(m);
+    for (const auto &e : n.radar_single_robot_info) {
+        p->add_radar_single_robot_info(e.target_pos_x);
+        p->add_radar_single_robot_info(e.target_pos_y);
+        p->add_radar_single_robot_info(e.is_high_light);
+    }
+}
+
+bool encode_RadarInfoToClient(const Message &m, std::string *out) {
+    if (radarWireFormat() == RadarWireFormat::FlatPackedUint32) {
+        rm_radar_flat::RadarInfoToClient p;
+        encode_RadarInfoToClient_flat(m, &p);
+        return p.SerializeToString(out);
+    }
+    rm_client_down::RadarInfoToClient p;
+    encode_RadarInfoToClient_nested(m, &p);
+    return p.SerializeToString(out);
+}
+
+bool encode_RadarInfoToClient_canonical(const Message &m, std::string *out) {
+    rm_client_down::RadarInfoToClient p;
+    encode_RadarInfoToClient_nested(m, &p);
+    return p.SerializeToString(out);
+}
+
+std::unique_ptr<Message> decode_RadarInfoToClient(const google::protobuf::Message &p) {
+    if (p.GetDescriptor() == rm_radar_flat::RadarInfoToClient::descriptor()) {
+        const auto &f = static_cast<const rm_radar_flat::RadarInfoToClient &>(p);
+        const auto &vals = f.radar_single_robot_info();
+        if (vals.size() % 3 != 0) return nullptr;   // flat 模式必须是 3 的整数倍
+        auto n = std::make_unique<RadarInfoToClient>();
+        n->radar_single_robot_info.reserve(vals.size() / 3);
+        for (std::size_t i = 0; i + 2 < vals.size(); i += 3) {
+            RadarInfoToClient::RadarSingleRobotInfo x{};
+            x.target_pos_x = vals[static_cast<int>(i)];
+            x.target_pos_y = vals[static_cast<int>(i + 1)];
+            x.is_high_light = vals[static_cast<int>(i + 2)];
+            n->radar_single_robot_info.push_back(x);
+        }
+        return n;
+    }
+    return decode_RadarInfoToClient_nested(static_cast<const rm_client_down::RadarInfoToClient &>(p));
 }
 
 // ================= CustomByteBlock =================
@@ -687,6 +734,7 @@ const MessageDesc kMessages[] = {
          encode_KeyboardMouseControl(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_KeyboardMouseControl(static_cast<const rm_client_up::KeyboardMouseControl &>(p));
      },
@@ -700,6 +748,7 @@ const MessageDesc kMessages[] = {
          encode_CustomControl(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_CustomControl(static_cast<const rm_client_up::CustomControl &>(p));
      },
@@ -713,6 +762,7 @@ const MessageDesc kMessages[] = {
          encode_MapClickCmd(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_MapClickCmd(static_cast<const rm_client_up::MapClickCmd &>(p));
      },
@@ -726,6 +776,7 @@ const MessageDesc kMessages[] = {
          encode_AssemblyCommand(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_AssemblyCommand(static_cast<const rm_client_up::AssemblyCommand &>(p));
      },
@@ -739,6 +790,7 @@ const MessageDesc kMessages[] = {
          encode_RobotPerformanceSelectionCommand(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_RobotPerformanceSelectionCommand(static_cast<const rm_client_up::RobotPerformanceSelectionCommand &>(p));
      },
@@ -752,6 +804,7 @@ const MessageDesc kMessages[] = {
          encode_CommonCommand(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_CommonCommand(static_cast<const rm_client_up::CommonCommand &>(p));
      },
@@ -765,6 +818,7 @@ const MessageDesc kMessages[] = {
          encode_RuneActivateCommand(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_RuneActivateCommand(static_cast<const rm_client_up::RuneActivateCommand &>(p));
      },
@@ -778,6 +832,7 @@ const MessageDesc kMessages[] = {
          encode_DartCommand(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_DartCommand(static_cast<const rm_client_up::DartCommand &>(p));
      },
@@ -791,6 +846,7 @@ const MessageDesc kMessages[] = {
          encode_SentryCtrlCommand(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_SentryCtrlCommand(static_cast<const rm_client_up::SentryCtrlCommand &>(p));
      },
@@ -804,6 +860,7 @@ const MessageDesc kMessages[] = {
          encode_GameStatus(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_GameStatus(static_cast<const rm_client_down::GameStatus &>(p));
      },
@@ -817,6 +874,7 @@ const MessageDesc kMessages[] = {
          encode_GlobalUnitStatus(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_GlobalUnitStatus(static_cast<const rm_client_down::GlobalUnitStatus &>(p));
      },
@@ -830,6 +888,7 @@ const MessageDesc kMessages[] = {
          encode_GlobalLogisticsStatus(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_GlobalLogisticsStatus(static_cast<const rm_client_down::GlobalLogisticsStatus &>(p));
      },
@@ -843,6 +902,7 @@ const MessageDesc kMessages[] = {
          encode_GlobalSpecialMechanism(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_GlobalSpecialMechanism(static_cast<const rm_client_down::GlobalSpecialMechanism &>(p));
      },
@@ -856,6 +916,7 @@ const MessageDesc kMessages[] = {
          encode_Event(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_Event(static_cast<const rm_client_down::Event &>(p));
      },
@@ -869,6 +930,7 @@ const MessageDesc kMessages[] = {
          encode_RobotInjuryStat(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_RobotInjuryStat(static_cast<const rm_client_down::RobotInjuryStat &>(p));
      },
@@ -882,6 +944,7 @@ const MessageDesc kMessages[] = {
          encode_RobotRespawnStatus(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_RobotRespawnStatus(static_cast<const rm_client_down::RobotRespawnStatus &>(p));
      },
@@ -895,6 +958,7 @@ const MessageDesc kMessages[] = {
          encode_RobotStaticStatus(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_RobotStaticStatus(static_cast<const rm_client_down::RobotStaticStatus &>(p));
      },
@@ -908,6 +972,7 @@ const MessageDesc kMessages[] = {
          encode_RobotDynamicStatus(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_RobotDynamicStatus(static_cast<const rm_client_down::RobotDynamicStatus &>(p));
      },
@@ -921,6 +986,7 @@ const MessageDesc kMessages[] = {
          encode_RobotModuleStatus(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_RobotModuleStatus(static_cast<const rm_client_down::RobotModuleStatus &>(p));
      },
@@ -934,6 +1000,7 @@ const MessageDesc kMessages[] = {
          encode_RobotPosition(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_RobotPosition(static_cast<const rm_client_down::RobotPosition &>(p));
      },
@@ -947,6 +1014,7 @@ const MessageDesc kMessages[] = {
          encode_Buff(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_Buff(static_cast<const rm_client_down::Buff &>(p));
      },
@@ -960,6 +1028,7 @@ const MessageDesc kMessages[] = {
          encode_PenaltyInfo(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_PenaltyInfo(static_cast<const rm_client_down::PenaltyInfo &>(p));
      },
@@ -973,6 +1042,7 @@ const MessageDesc kMessages[] = {
          encode_RobotPathPlanInfo(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_RobotPathPlanInfo(static_cast<const rm_client_down::RobotPathPlanInfo &>(p));
      },
@@ -986,6 +1056,7 @@ const MessageDesc kMessages[] = {
          encode_MapClickInfo(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_MapClickInfo(static_cast<const rm_client_down::MapClickInfo &>(p));
      },
@@ -994,14 +1065,9 @@ const MessageDesc kMessages[] = {
      rm_client_down::RadarInfoToClient::descriptor(),
      0, 0, 1,
      "[{\"name\":\"radar_single_robot_info\",\"type\":\"RadarSingleRobotInfo\",\"num\":1,\"repeated\":true,\"fields\":[{\"name\":\"target_pos_x\",\"type\":\"uint32\",\"num\":1,\"repeated\":false},{\"name\":\"target_pos_y\",\"type\":\"uint32\",\"num\":2,\"repeated\":false},{\"name\":\"is_high_light\",\"type\":\"uint32\",\"num\":3,\"repeated\":false}]}]",
-     [](const Message &m, std::string *out) {
-         rm_client_down::RadarInfoToClient p;
-         encode_RadarInfoToClient(m, &p);
-         return p.SerializeToString(out);
-     },
-     [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
-         return decode_RadarInfoToClient(static_cast<const rm_client_down::RadarInfoToClient &>(p));
-     },
+     [](const Message &m, std::string *out) { return encode_RadarInfoToClient(m, out); },
+     [](const Message &m, std::string *out) { return encode_RadarInfoToClient_canonical(m, out); },
+     [](const google::protobuf::Message &p) -> std::unique_ptr<Message> { return decode_RadarInfoToClient(p); },
      []() -> std::unique_ptr<Message> { return std::make_unique<RadarInfoToClient>(); }},
     {"CustomByteBlock", Direction::ServerToClient,
      rm_client_down::CustomByteBlock::descriptor(),
@@ -1012,6 +1078,7 @@ const MessageDesc kMessages[] = {
          encode_CustomByteBlock(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_CustomByteBlock(static_cast<const rm_client_down::CustomByteBlock &>(p));
      },
@@ -1025,6 +1092,7 @@ const MessageDesc kMessages[] = {
          encode_TechCoreMotionStateSync(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_TechCoreMotionStateSync(static_cast<const rm_client_down::TechCoreMotionStateSync &>(p));
      },
@@ -1038,6 +1106,7 @@ const MessageDesc kMessages[] = {
          encode_RobotPerformanceSelectionSync(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_RobotPerformanceSelectionSync(static_cast<const rm_client_down::RobotPerformanceSelectionSync &>(p));
      },
@@ -1051,6 +1120,7 @@ const MessageDesc kMessages[] = {
          encode_RuneStatusSync(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_RuneStatusSync(static_cast<const rm_client_down::RuneStatusSync &>(p));
      },
@@ -1064,6 +1134,7 @@ const MessageDesc kMessages[] = {
          encode_SentryStatusSync(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_SentryStatusSync(static_cast<const rm_client_down::SentryStatusSync &>(p));
      },
@@ -1077,6 +1148,7 @@ const MessageDesc kMessages[] = {
          encode_DartSelectTargetStatusSync(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_DartSelectTargetStatusSync(static_cast<const rm_client_down::DartSelectTargetStatusSync &>(p));
      },
@@ -1090,6 +1162,7 @@ const MessageDesc kMessages[] = {
          encode_SentryCtrlResult(m, &p);
          return p.SerializeToString(out);
      },
+     nullptr,
      [](const google::protobuf::Message &p) -> std::unique_ptr<Message> {
          return decode_SentryCtrlResult(static_cast<const rm_client_down::SentryCtrlResult &>(p));
      },

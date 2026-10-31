@@ -1,0 +1,16 @@
+syntax = "proto3";
+// RoboMaster 2027 自定义终端通信协议 —— RadarInfoToClient 的**另一种线格式**
+// 官方 PDF §2.2.19 原文：`repeated uint32 RadarSingleRobotInfo;`（字段号未给出）
+// 这里补字段号 = 1，与官方字面线格式完全一致（packed repeated uint32）。
+// 仅在 rm2027::setRadarWireFormat(RadarWireFormat::FlatPackedUint32) 时使用；
+// 默认线格式是 rm2027_client_down.proto 中的嵌套 message 写法。
+// 生成器：tools/gen_v2_proto.py；说明：README「雷达线格式」。
+
+package rm_radar_flat;
+
+message RadarInfoToClient {
+    // 官方 PDF §2.2.19 字面声明：原文为 `repeated uint32 RadarSingleRobotInfo;`
+    // （官方原文未给出字段号、字段名使用了结构体名）。这里补字段号 = 1，语义等价：
+    // 字段 1 = packed repeated uint32，8 个目标 × 3 个值 = 24 个 uint32。
+    repeated uint32 radar_single_robot_info = 1;
+}

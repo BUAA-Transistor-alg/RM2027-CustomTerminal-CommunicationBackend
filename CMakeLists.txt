@@ -14,8 +14,8 @@ endif()
 # ---------------------------------------------------------------------------
 # 选项
 # ---------------------------------------------------------------------------
-# UDP 图传包头字节序：官方 PDF 未规定。默认大端（与 SharkDataSever 一致，可交叉验证）。
-option(RM_UDP_HEADER_BIG_ENDIAN "UDP 8 字节包头使用大端序" ON)
+# 说明：UDP 图传 8 字节包头**固定大端**——官方 2027 V1.0.0 协议 §2 明文
+# 「此额外添加的 8 个字节为大端传输」，因此不再提供字节序开关。
 option(RM_BUILD_CLIENT          "构建 MQTT 自定义终端"   ON)
 option(RM_BUILD_SERVER          "构建 MQTT 协议服务器(自带 broker)" ON)
 option(RM_BUILD_VIDEO           "构建 UDP 图传码流收发工具" ON)
@@ -58,7 +58,7 @@ message(STATUS "protobuf 版本: ${Protobuf_VERSION}")
 
 set(RM_PROTO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/proto)
 set(RM_PROTO_SRCS "")
-foreach(p rm2027_client_up rm2027_client_down rm2027_scenario)
+foreach(p rm2027_client_up rm2027_client_down rm2027_radar_flat rm2027_scenario)
     list(APPEND RM_PROTO_SRCS
         ${RM_PROTO_DIR}/${p}.proto)
 endforeach()
@@ -82,11 +82,6 @@ target_include_directories(rm2027_core PUBLIC
     ${CMAKE_CURRENT_BINARY_DIR}
 )
 target_link_libraries(rm2027_core PUBLIC rm2027_proto Threads::Threads)
-if(RM_UDP_HEADER_BIG_ENDIAN)
-    target_compile_definitions(rm2027_core PUBLIC RM_UDP_HEADER_BIG_ENDIAN=1)
-else()
-    target_compile_definitions(rm2027_core PUBLIC RM_UDP_HEADER_BIG_ENDIAN=0)
-endif()
 
 # ---------------------------------------------------------------------------
 # 对外 API 公共层：32 个 C++ 原生结构体 + 消息注册表 + 转换（src/api/messages.cpp 由
@@ -96,6 +91,8 @@ add_library(rm2027_api STATIC
     src/api/messages.cpp
     src/api/registry.cpp
     src/api/scenario.cpp
+    src/api/validate.cpp
+    src/api/wire_format.cpp
 )
 target_link_libraries(rm2027_api PUBLIC rm2027_core)
 
@@ -202,9 +199,5 @@ if(RM_PAHO_TARGET)
     message(STATUS "librm2027c.so: C 接口已启用")
 endif()
 
-message(STATUS "UDP 包头字节序: ${RM_UDP_HEADER_BIG_ENDIAN_STR}")
-if(RM_UDP_HEADER_BIG_ENDIAN)
-    message(STATUS "  -> 大端 (BIG ENDIAN)，与 SharkDataSever 一致")
-else()
-    message(STATUS "  -> 小端 (LITTLE ENDIAN)")
-endif()
+message(STATUS "UDP 包头字节序: 大端（官方 2027 V1.0.0 §2 明文规定，实现不再提供开关）")
+message(STATUS "RadarInfoToClient 线格式: 默认 nested，可用 setRadarWireFormat()/--radar-wire-format 切 flat")

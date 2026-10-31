@@ -63,7 +63,7 @@ RM2027-CustomTerminal-CommunicationBackend/
     ├── run_video.sh                # UDP 图传收发
     ├── run_video_capi.sh           # 图传纯 C 接口
     ├── stress_video.sh             # 图传压力矩阵
-    ├── check_endian.sh             # 包头字节序编译开关
+    ├── run_radar_wire.sh           # 雷达线格式（nested / flat）
     ├── run_integrated.sh           # 端到端一体（协议 + 图传）
     ├── run_all.sh                  # 一键全跑
     ├── scenarios/                  # 生成的测试场景 JSON
@@ -109,8 +109,9 @@ bash build.sh                    # 等价于 cmake + make，自动 -j$(nproc)
 
 | 选项 | 默认 | 说明 |
 | :-- | :-- | :-- |
-| `RM_UDP_HEADER_BIG_ENDIAN` | `ON` | UDP 8 字节包头字节序。官方文档**未规定**；默认大端以与 SharkDataSever 互通 |
 | `RM_BUILD_CLIENT` / `RM_BUILD_SERVER` / `RM_BUILD_VIDEO` | `ON` | 分别控制各可执行文件 |
+
+UDP 8 字节包头**固定大端**，官方 2027 V1.0.0 §2 明文规定（原文：「此额外添加的 8 个字节为大端传输」）；无编译开关，也不提供小端分支。
 
 ---
 
@@ -221,6 +222,9 @@ server.runUntilStopped();
 | 序列化（调试用） | `rm2027::toJson/toBinary/fromJson/fromBinary/createMessage` | 同 |
 
 完整可运行示例见 [examples/api_demo.cpp](../examples/api_demo.cpp)，验证脚本 `tests/run_api.sh`。
+
+> 发送前会按官方 §2.2 校验长度 / 值域（`CustomControl` ≤60B、`CustomByteBlock` ≤300B、`MapClick*` 的 `robot_id` 固定 7B、
+> `GlobalUnitStatus.robot_health` / 雷达非空时固定 8 个、`keyboard_value` ≤0xFFFF）；不符合时发送被拒绝并给出原因，接收端则不校验、尽量解析。
 
 > **注意（一个容易踩的坑）**：`--start-after` 判断的是「客户端已连接」，
 > 而 TCP 连上 ≠ 订阅完成。服务器侧若要立刻发数据，请等 `subscribedClientCount() > 0`，
@@ -396,11 +400,12 @@ rm_video_receiver_free(rx);
 > 解码格式模式字符串大小写、点、横线都不敏感：`auto` / `h265` / `hevc` /
 > `H.265` / `h264` / `jpeg` / `mjpeg` 都能识别。
 
-### 接口一览（36 个 MQTT 符号 + 21 个图传符号，共 57 个导出函数）
+### 接口一览（38 个 MQTT 符号 + 21 个图传符号，共 59 个导出函数）
 
 | 分类 | 函数 |
 | :-- | :-- |
 | 元数据 | `rm_message_count` / `_name` / `_direction` / `_triggered` / `_default_hz` / `_max_hz` / `_fields_json` / `_index` |
+| 雷达线格式 | `rm_set_radar_wire_format` / `rm_get_radar_wire_format` |
 | 客户端 | `rm_client_new` / `_free` / `_start` / `_stop` / `_is_connected` / `_send` / `_received` / `_sent` |
 | 服务器 | `rm_server_new` / `_free` / `_start` / `_stop` / `_is_running` / `_send` / `_client_count` / `_subscribed_client_count` / `_received` / `_sent` |
 | 回调 | `rm_set_message_cb` / `rm_set_event_cb` |
@@ -430,6 +435,8 @@ cli.send("DartCommand", {"target_id": 1, "open": True, "launch_confirm": True})
 
 for m in rm.messages():                    # 32 条指令元数据
     print(m.name, m.direction, m.frequency_text)
+
+rm.set_radar_wire_format("nested")         # 或 "flat"：RadarInfoToClient 线格式（默认 nested）
 ```
 
 > 回调在 C++ 的工作线程里执行。做 Qt 界面时用信号转到主线程
@@ -604,6 +611,8 @@ ls /tmp/rx_*.ppm
 bash tests/run_all.sh
 ```
 
+一键串起 11 项验证（含雷达线格式测试）。
+
 ---
 
 ## 8. 验证方法（为什么结论可信）
@@ -623,7 +632,7 @@ bash tests/run_all.sh
 
 | 验证项 | 范围 | 结果 |
 | :-- | :-- | :-- |
-| **官方一致性** 逐字段机器比对 | 官方 V1.0.0 PDF §2.2 全部 32 条 | ✅ **32/32 完全一致**（`tools/diff_protocol_versions.py`） |
+| **官方一致性** 逐字段机器字面比对 | 官方 V1.0.0 PDF §2.2 全部 32 条协议消息 + 1 条辅助 message | ✅ **31/32 字面一致 + 1 条已知偏离**（`RadarInfoToClient` 雷达双模式，见根目录 README；`tools/diff_protocol_versions.py`） |
 | **对外 API** 只用公开头文件的示例 | 6 条收发 + 字段值 | ✅ 全部命中（`tests/run_api.sh`） |
 | **纯 C 接口** librm2027c.so + ctypes | 32 条元数据 + 双向收发 + 嵌套/bytes | ✅ 全部命中（`tests/run_capi.sh`） |
 | **PyQt5 面板** 离屏跑真实窗口 | 频率默认值/触发式/自动发送/接收显示/深色浅色主题/图传面板（收发+实时预览+格式切换） | ✅ 全部命中（`tests/run_gui.sh`） |
@@ -634,7 +643,8 @@ bash tests/run_all.sh
 | **协议** C++ 服务器 ↔ C++ 客户端 | 23 下行 + 9 上行 = 32 条 | ✅ 逐字段一致 |
 | **交叉验证** C++ 服务器 ↔ Node(mqtt.js + protobufjs) | 32 条 | ✅ 逐字段一致（第三方 MQTT 栈 + 第三方 protobuf 实现） |
 | **UDP 图传** tx ↔ rx（1080p60） | 120 帧 / 626 包 | ✅ 重组结果与原始码流**逐字节一致**，ffprobe+ffmpeg 校验通过，0 丢包 |
-| **字节序开关** | 大端/小端各一次 | ✅ 同序自洽逐字节一致；混用则 **0 帧可重组** |
+| **雷达线格式** | nested（默认）/ flat（官方字面）两模式往返 | ✅ 各自逐字段一致（`tests/run_radar_wire.sh`） |
+| **UDP 包头** | 固定大端（官方 2027 §2） | ✅ 与官方一致（`tests/run_video.sh` 校验） |
 | **端到端一体** 协议 + 图传同时跑 | 32 条 + 图传 | ✅ 全部通过 |
 
 > 端到端测试里 ffprobe 可能打印 `PPS id out of range` / `Could not find ref with POC ...`：
@@ -693,12 +703,19 @@ bash tests/run_all.sh
   `AirSupportCommand` / `AirSupportStatusSync`（空中支援）共 4 条，且无新增指令。
 * 官方 V1.0.0 使用的 proto3 `optional` 标签**原样保留**（需要 protobuf ≥ 3.15；
   本项目用 `tools/build_protobuf.sh` 构建的 3.21.12）。
-* 官方 PDF 的已知笔误在 proto 中已修正并注明：
-  * `RadarInfoToClient` 原文 `repeated uint32 RadarSingleRobotInfo;` —— **缺字段号、类型写错**
-    （2027 V1.0.0 仍未修正）；本项目修正为 `repeated RadarSingleRobotInfo radar_single_robot_info = 1;`，
-    并把 `RadarSingleRobotInfo` 实现为嵌套 message（它不是 MQTT topic）
-  * `CustomControl` 在 2026 V2.0.0 原文为 `bytes data=1；`（全角分号），2027 V1.0.0 已修正为
-    `optional bytes data=1;`，本项目按修正后的写法实现
+* 官方 PDF 中 `RadarInfoToClient` 的写法在两种线格式中分别实现：
+  * 原文 `repeated uint32 RadarSingleRobotInfo;`（字段号未给出、类型写作 uint32），
+    该声明本身不是合法的 proto；常见开源实现（ACE / ClearWei）采用嵌套 message，与其不同。
+    本项目**两种解释都实现、可切换**：
+    默认 `NestedMessage`（嵌套 message：`repeated RadarSingleRobotInfo radar_single_robot_info = 1;`，
+    与 ACE / ClearWei 等第三方实现的线格式一致，也是 JSON / 日志使用的形式）；
+    可选 `FlatPackedUint32`（`proto/rm2027_radar_flat.proto`：`repeated uint32 radar_single_robot_info = 1;`，
+    补上字段号，24 个 packed uint32，对应官方原文写法）。
+    切换方式：C++ `rm2027::setRadarWireFormat()`、C `rm_set_radar_wire_format(0|1)`、
+    Python `rm.set_radar_wire_format("nested"|"flat")`、CLI `--radar-wire-format nested|flat`（`rm_server` / `rm_client`）。
+    默认选嵌套的理由与实测见根目录 [README.md](../README.md)「雷达线格式」。
+  * `CustomControl` 在 2026 V2.0.0 原文为 `bytes data=1；`（全角分号），2027 V1.0.0 原文为
+    `optional bytes data=1;`，本项目按 2027 写法实现
 * RM2026 V2.0.0 → RM2027 V1.0.0 的全部变更（删 4 条指令、`GlobalUnitStatus` 字段重构、
   `GameStatus.end_reason` / `Event.event_id` / `GlobalSpecialMechanism.mechanism_id` 枚举重排、
   `RadarInfoToClient` 每方 4 台共 8 目标、`CustomControl` 上限 30→60 字节、装配主体迁移到重装等）

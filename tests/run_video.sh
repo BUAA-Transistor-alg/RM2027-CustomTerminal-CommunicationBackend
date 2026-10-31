@@ -13,7 +13,8 @@ DUR=3
 rm -f "$OUT/vid_"*.ppm "$OUT/vid_"*.out "$OUT/vid_"*.err
 
 echo "=== UDP 图传验证（端口 $PORT）==="
-./build/rm_video_rx --help 2>&1 | grep -o 'BIG-ENDIAN\|LITTLE-ENDIAN' | head -1 | sed 's/^/包头: /'
+# 官方 2027 V1.0.0 §2 明文规定 8 字节包头为大端，本实现只支持大端（无开关）。
+echo "包头: 大端（官方 2027 V1.0.0 §2 规定；实现固定大端，无字节序开关）"
 
 "$ROOT/build/rm_video_rx" --port "$PORT" --duration 5 --stats-interval 0 \
     --dump "$OUT/vid" --dump-every 12 --dump-max 4 \

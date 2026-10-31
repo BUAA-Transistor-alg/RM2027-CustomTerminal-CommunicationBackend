@@ -7,6 +7,10 @@
  *   * 回调里的名字与 JSON 指针只在回调期间有效，需要留存请自行拷贝。
  *   * 元数据（rm_message_*）返回的字符串是静态存储，永久有效，无需释放。
  *   * 所有返回 int 的函数：0 = 成功，非 0 = 失败（用 rm_last_error() 取原因）。
+ *   * 发送前会按官方 §2.2 校验字段长度/值域（CustomControl ≤60B、CustomByteBlock
+ *     ≤300B、MapClick robot_id 固定 7B、robot_health/radar 非空须 8 个等），
+ *     不符合时发送被拒绝，rm_last_error() 里带具体原因。
+ *   * RadarInfoToClient 有两种可切换线格式，见下方 rm_set_radar_wire_format()。
  * =========================================================================== */
 #ifndef RM2027_C_H
 #define RM2027_C_H
@@ -44,6 +48,20 @@ int         rm_message_triggered_by_name(const char *name);
 double      rm_message_default_hz_by_name(const char *name);
 double      rm_message_max_hz_by_name(const char *name);
 const char *rm_message_fields_json_by_name(const char *name);
+
+/* ---------------------------------------------------------------------------
+ * 雷达线格式（只影响 RadarInfoToClient 一条消息；进程级全局设置）
+ *
+ *   0 = nested（默认）：repeated RadarSingleRobotInfo（嵌套 message），
+ *       与 ACE / ClearWei 等第三方实现的线格式一致；
+ *   1 = flat          ：严格按官方 PDF §2.2.19 字面
+ *       `repeated uint32 RadarSingleRobotInfo;`（补字段号 = 1）：
+ *       字段 1 为 packed repeated uint32，8 目标 × 3 值 = 24 个 uint32。
+ *
+ * 收发两端必须设置成同一模式；MQTT topic / qos / JSON 形式不变
+ * （JSON 始终是嵌套形式，与线格式无关）。返回 0 = 成功，非 0 = 失败。 */
+int rm_set_radar_wire_format(int format);
+int rm_get_radar_wire_format(void);
 
 /* ---------------------------------------------------------------------------
  * 客户端

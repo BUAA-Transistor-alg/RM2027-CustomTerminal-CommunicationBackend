@@ -10,6 +10,14 @@
     repeated                  -> [v, v]
     嵌套消息(repeated)         -> [obj, obj]
 
+官方 §2.2 的协议约束（发送路径会校验，不合规会被拒绝），因此下列字段必须
+按官方要求生成，不能用上面的通用规则（见 OVERRIDES）：
+    MapClickInfo/MapClickCmd.robot_id      -> 固定 7 字节（首字节=字段号、次字节 0xAB，其余补 0）
+    GlobalUnitStatus.robot_health          -> 8 个（空允许；这里填 8 个唯一值）
+    RadarInfoToClient.radar_single_robot_info -> 8 个嵌套对象（每对象 3 字段唯一值）
+    KeyboardMouseControl.keyboard_value    -> 通用值 6100，本身 <= 0xFFFF，无需 override
+    CustomControl/CustomByteBlock.data     -> 通用值仅 2 字节，未超上限，无需 override
+
 用法:
     python3 tests/gen_scenario.py            # 生成 tests/scenarios/*.json
 """
@@ -34,12 +42,49 @@ FLOAT_TYPES = {"float", "double"}
 INT_TYPES = {"int32", "uint32", "int64", "uint64", "sint32", "sint64",
              "fixed32", "fixed64", "sfixed32", "sfixed64"}
 
+# 官方 §2.2 的字段约束：值为「完整字段值」（repeated 字段给整个列表）。
+# 键 = (消息名, 字段名)，便于逐消息逐字段覆盖，其余字段仍走通用规则。
+OVERRIDES = {}
 
-def value_for(field, salt):
+
+def _robot_id_7b(field, salt):
+    """MapClickInfo/MapClickCmd.robot_id：官方要求固定 7 字节（不足补 0）。
+
+    首字节为字段号、次字节 0xAB（便于定位 bytes 字段），后 5 字节补 0。
+    """
+    raw = bytes([field["num"] & 0xFF, 0xAB, 0, 0, 0, 0, 0])
+    assert len(raw) == 7
+    return base64.b64encode(raw).decode()
+
+
+def _unique_range(field, salt, count):
+    """repeated 标量：在通用基数上 +0..count-1，得到 count 个互不相同的值。"""
+    base = field["num"] * 1000 + salt
+    return [base + i for i in range(count)]
+
+
+def _radar_targets(field, salt):
+    """RadarInfoToClient：官方要求 8 个目标；每个目标的 3 个字段取唯一值。"""
+    return [{f["name"]: f["num"] * 1000 + salt + i for f in field["fields"]}
+            for i in range(8)]
+
+
+OVERRIDES.update({
+    ("MapClickInfo", "robot_id"): _robot_id_7b,
+    ("MapClickCmd", "robot_id"): _robot_id_7b,
+    ("GlobalUnitStatus", "robot_health"): lambda f, s: _unique_range(f, s, 8),
+    ("RadarInfoToClient", "radar_single_robot_info"): _radar_targets,
+})
+
+
+def value_for(msg, field, salt):
+    fn = OVERRIDES.get((msg, field["name"]))
+    if fn is not None:
+        return fn(field, salt)
     num = field["num"]
     t = field["type"]
     if "fields" in field:                      # 嵌套消息
-        obj = {f["name"]: value_for(f, salt) for f in field["fields"]}
+        obj = {f["name"]: value_for(msg, f, salt) for f in field["fields"]}
         return [obj, dict(obj)] if field.get("repeated") else obj
     if t == "bool":
         v = True
@@ -55,7 +100,7 @@ def value_for(field, salt):
 
 
 def build(name, spec, salt):
-    return {f["name"]: value_for(f, salt) for f in spec[name]}
+    return {f["name"]: value_for(name, f, salt) for f in spec[name]}
 
 
 def main():

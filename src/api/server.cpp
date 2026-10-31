@@ -7,6 +7,7 @@
 #include <mutex>
 
 #include "rm2027/api/detail/registry.h"
+#include "rm2027/api/validate.h"
 #include "rm2027/broker/mqtt_broker.h"
 #include "rm2027/common/log.h"
 #include "rm2027/protocol/codec.h"
@@ -38,14 +39,12 @@ struct Server::Impl {
             return;
         }
         std::string err;
-        auto proto = decodeMessage(desc->descriptor, mqttMsg.payload.data(),
-                                   mqttMsg.payload.size(), &err);
-        if (!proto) {
+        auto native = fromWire(*desc, mqttMsg.payload.data(), mqttMsg.payload.size(), &err);
+        if (!native) {
             RM_WARN("server", "解码失败 " << mqttMsg.topic << ": " << err);
             return;
         }
         received.fetch_add(1);
-        auto native = desc->decode(*proto);
         if (opt.logMessages) {
             RM_INFO("server", "↑ " << mqttMsg.topic << " (" << mqttMsg.payload.size() << " B) 来自 "
                                    << clientId);
@@ -152,6 +151,11 @@ bool Server::send(const std::string &name, std::unique_ptr<Message> msg) {
     const MessageDesc *desc = findMessage(name);
     if (desc == nullptr) {
         RM_ERROR("server", "send: 未知指令 " << name);
+        return false;
+    }
+    std::string verr;
+    if (!validateMessage(*msg, &verr)) {
+        RM_ERROR("server", "send: 指令不符合官方协议约束 " << name << ": " << verr);
         return false;
     }
     std::string payload;

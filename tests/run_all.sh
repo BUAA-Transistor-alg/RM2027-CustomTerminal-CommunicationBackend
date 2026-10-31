@@ -28,7 +28,7 @@ run "交叉验证: C++ 服务器 ↔ Node(mqtt.js+protobufjs)"   bash "$HERE/run
 run "图传: 编码->分片->UDP->重组->解码 (画面逐像素校验)"   bash "$HERE/run_video.sh"
 run "图传接口: 纯 C + Python(ctypes/numpy)"              bash "$HERE/run_video_capi.sh"
 run "图传压力测试: 18 种编码方式 / 故障注入"              bash "$HERE/stress_video.sh"
-run "UDP 包头字节序编译开关"                            bash "$HERE/check_endian.sh"
+run "雷达线格式: nested / flat 双模式 + flat 端到端"      bash "$HERE/run_radar_wire.sh"
 run "端到端一体 (协议 + 图传)"                          bash "$HERE/run_integrated.sh"
 
 echo

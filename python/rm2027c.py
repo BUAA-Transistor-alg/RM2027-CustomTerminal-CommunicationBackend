@@ -31,6 +31,8 @@ from typing import Callable, Dict, List, Optional
 
 __all__ = ["MessageInfo", "messages", "message_names", "message_info",
            "Client", "Server", "library_path", "version",
+           "set_radar_wire_format", "radar_wire_format",
+           "RADAR_WIRE_NESTED", "RADAR_WIRE_FLAT",
            "VideoSender", "VideoReceiver", "VideoFrame", "VideoSenderStats",
            "VideoReceiverStats", "CODEC_AUTO", "CODEC_H265", "CODEC_H264", "CODEC_JPEG",
            "TIMEOUT_NONE", "TIMEOUT_GOT_FRAME", "TIMEOUT_NO_FRAME"]
@@ -82,6 +84,10 @@ _lib.rm_message_fields_json.restype = c_char_p
 _lib.rm_message_fields_json.argtypes = [c_int]
 _lib.rm_message_index.restype = c_int
 _lib.rm_message_index.argtypes = [c_char_p]
+_lib.rm_set_radar_wire_format.restype = c_int
+_lib.rm_set_radar_wire_format.argtypes = [c_int]
+_lib.rm_get_radar_wire_format.restype = c_int
+_lib.rm_get_radar_wire_format.argtypes = []
 
 _lib.rm_client_new.restype = c_void_p
 _lib.rm_client_new.argtypes = [c_char_p, c_uint16, c_char_p]
@@ -182,6 +188,41 @@ _lib.rm_video_receiver_stats.argtypes = [c_void_p, c_char_p, c_int]
 
 _MSG_CB = CFUNCTYPE(None, c_void_p, c_char_p, c_char_p, c_char_p)
 _EVT_CB = CFUNCTYPE(None, c_void_p, c_char_p, c_char_p)
+
+
+# RadarInfoToClient 的两种线格式（进程级全局设置；收发两端必须一致）。
+#   RADAR_WIRE_NESTED —— 默认：嵌套 message（与 ACE / ClearWei 等第三方实现线格式一致）
+#   RADAR_WIRE_FLAT   —— 官方 PDF §2.2.19 字面：packed repeated uint32（24 个 uint32）
+# JSON / dict 始终是嵌套形式，与线格式无关。详见 README「雷达线格式」。
+RADAR_WIRE_NESTED = "nested"
+RADAR_WIRE_FLAT = "flat"
+
+
+def set_radar_wire_format(mode) -> None:
+    """设置 RadarInfoToClient 线格式："nested"（默认）或 "flat"。
+
+    参数也接受 0/1。收发两端必须一致；只影响这一条消息的 protobuf 二进制，
+    不影响 topic/qos/JSON 形式。"""
+    if isinstance(mode, str):
+        v = mode.strip().lower()
+        if v in ("nested", "nested_message"):
+            code = 0
+        elif v in ("flat", "flat_packed_uint32", "packed"):
+            code = 1
+        else:
+            raise ValueError("未知雷达线格式: %r（可选 nested / flat）" % (mode,))
+    elif isinstance(mode, int) and mode in (0, 1):
+        code = mode
+    else:
+        raise ValueError("未知雷达线格式: %r（可选 nested / flat / 0 / 1）" % (mode,))
+    rc = _lib.rm_set_radar_wire_format(code)
+    if rc != 0:
+        raise RuntimeError("设置雷达线格式失败: %s" % _last_error())
+
+
+def radar_wire_format() -> str:
+    """当前 RadarInfoToClient 线格式："nested" 或 "flat" """
+    return "flat" if _lib.rm_get_radar_wire_format() == 1 else "nested"
 
 
 def version() -> str:
