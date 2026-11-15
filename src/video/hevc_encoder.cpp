@@ -105,12 +105,12 @@ bool HevcEncoder::open(const EncoderConfig &cfg, std::string *error) {
         return false;
     }
     c->pix_fmt = pix;
-    // 10bit 要给足码率，否则画质崩
+    // 10bit 要给足码率，否则画质崩溃
     if (cfg.pixFmt.find("10le") != std::string::npos) c->bit_rate *= 2;
 
     // ---- x265 参数 ----
     // x265 硬性要求：rc-lookahead > 最大连续 B 帧数，否则直接拒绝打开编码器。
-    // 这里做兜底，免得每个调用方都要自己记得配。
+    // 这里提供默认值，避免每个调用方都要自己记得配置。
     int lookahead = cfg.x265Lookahead;
     if (cfg.bFrames > 0 && lookahead <= cfg.bFrames) {
         lookahead = cfg.bFrames + 1;
@@ -127,7 +127,7 @@ bool HevcEncoder::open(const EncoderConfig &cfg, std::string *error) {
     std::ostringstream x265;
     x265 << "log-level=error";
     if (cfg.gopSize > 0) x265 << ":keyint=" << cfg.gopSize << ":min-keyint=" << cfg.gopSize;
-    else x265 << ":keyint=-1"; // 只发第一个 IDR
+    else x265 << ":keyint=-1"; // 只发送第一个 IDR
     x265 << ":bframes=" << cfg.bFrames;
     if (cfg.slices > 1) x265 << ":slices=" << cfg.slices;
     x265 << ":aud=" << (cfg.aud ? 1 : 0);

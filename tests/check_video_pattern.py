@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""校验 rm_video_rx 落盘的解码帧是否与 rm_video_tx 的合成图案一致。
+"""校验 rm_video_rx 保存的解码帧是否与 rm_video_tx 的合成图案一致。
 
 图案定义必须与 src/video/main_tx.cpp 的 makePattern() 保持一致：
-  * 8 条竖向彩条（BGR），按 x/(w/8) 取色
+  * 8 条竖向彩条（BGR），按 x/(w/8) 获取颜色
   * 下半屏加纵向渐变：dim = 255 - (y - h/2)*255/(h/2)，上半屏 dim = 255
   * 一个白色方块，位置随帧号移动：x0=(f*7)%(w-w/8), y0=(f*3)%(h-h/8)
 发送端帧号 = 图案序号 + 1（帧号从 1 开始）。

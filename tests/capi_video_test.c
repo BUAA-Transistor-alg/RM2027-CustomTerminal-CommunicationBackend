@@ -50,7 +50,7 @@ int main(void) {
     int w = 0, h = 0, stride = 0, key = 0, got = 0, sent = 0;
 
     for (int i = 0; i < 240; i++) {
-        if (i % 4 == 0 && sent < 30) {           /* 每 4 轮发一帧 ≈ 30fps */
+        if (i % 4 == 0 && sent < 30) {           /* 每 4 轮发送一帧 ≈ 30fps */
             for (int y = 0; y < H; y++) {
                 for (int x = 0; x < W; x++) {
                     uint8_t *p = img + ((size_t)y * W + x) * 3;

@@ -1,7 +1,7 @@
 """跟随系统调色板的主题工具。
 
-之前把面板背景写死成 #fafafa，在深色主题下文字会变成白色 -> 白底白字看不见。
-这里统一从 QPalette 取色，明暗主题都能正确显示。
+之前把面板背景固定为 #fafafa，在深色主题下文字会变成白色 -> 白底白字看不见。
+这里统一从 QPalette 获取颜色，明暗主题都能正确显示。
 """
 from __future__ import annotations
 
@@ -54,7 +54,7 @@ def palette_colors() -> dict:
     alt = pal.color(QPalette.AlternateBase).name()
     base = pal.color(QPalette.Base).name()
     window = pal.color(QPalette.Window).name()
-    # 深色主题下 AlternateBase 可能与 Window 很接近，用 Base 兜底保证能分辨
+    # 深色主题下 AlternateBase 可能与 Window 很接近，退回 Base 保证能分辨
     panel_bg = alt if alt.lower() != window.lower() else base
     return {
         "panel": panel_bg,
@@ -66,7 +66,7 @@ def palette_colors() -> dict:
 
 
 def build_stylesheet() -> str:
-    """面板等自定义样式：全部取自调色板，不写死颜色"""
+    """面板等自定义样式：全部取自调色板，不固定颜色"""
     c = palette_colors()
     return """
 QFrame#messagePanel {

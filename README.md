@@ -75,7 +75,7 @@ cd RM2027-CustomTerminal-CommunicationBackend
 bash third_party/fetch_protobuf.sh     # 下载 + sha256 校验 + 编译安装到 third_party/protobuf-21.12，约 2 分钟
 ```
 
-> 脚本会用 `sha256` 校验官方发布包；网络不通时可手动下载 `protobuf-cpp-3.21.12.tar.gz` 后重跑。
+> 脚本会用 `sha256` 校验官方发布包；网络不通时可手动下载 `protobuf-cpp-3.21.12.tar.gz` 后重新运行。
 > 若系统已有 protobuf ≥ 3.15，可跳过此步（构建会自动回退到系统版本）。
 
 ### 4. 构建本项目
@@ -99,7 +99,7 @@ bash build.sh -j4             # 指定并行度
 
 > 两个常见问题：
 > 1. 若 `build/` 是之前用 Ninja 生成的旧目录，先 `rm -rf build`，否则 `make` 找不到 Makefile。
-> 2. 头文件 `protobuf` 版本 < 3.15 时编译会失败，请先跑第 3 步的脚本。
+> 2. 头文件 `protobuf` 版本 < 3.15 时编译会失败，请先运行第 3 步的脚本。
 
 ---
 
@@ -129,14 +129,14 @@ opt.port = 3333;
 opt.clientId = "3";                 // 官方规定：clientID = 机器人 ID
 rm2027::Client client(opt);
 
-// 收：按结构体类型绑定（推荐，类型安全）
+// 接收：按结构体类型绑定（推荐，类型安全）
 client.on<rm2027::GameStatus>([](std::unique_ptr<rm2027::GameStatus> st) {
     printf("stage=%u red=%u\n", st->current_stage, st->red_score);
 });
 
 client.start();                     // 立即返回；连不上会后台自动重试，断线自动重连
 
-// 发：构造结构体 -> 发送（指令名自动取自类型）
+// 发送：构造结构体 -> 发送（指令名自动取自类型）
 auto dart = std::make_unique<rm2027::DartCommand>();
 dart->target_id = 1;
 dart->launch_confirm = true;
@@ -165,7 +165,7 @@ server.start();
 auto st = std::make_unique<rm2027::GameStatus>();
 st->current_stage = 4;
 st->red_score = 100;
-st->game_result = 255;              // 官方约定：非结算阶段发 255
+st->game_result = 255;              // 官方约定：非结算阶段发送 255
 server.send(std::move(st));
 ```
 
@@ -289,7 +289,7 @@ message RadarInfoToClient {
 message RadarSingleRobotInfo { optional uint32 target_pos_x = 1; ... }
 ```
 
-其中 `repeated uint32 RadarSingleRobotInfo;` 缺少字段号，**这段声明本身不是合法的 proto**；同节字段表又把
+其中 `repeated uint32 RadarSingleRobotInfo;` 缺少字段号，**这段声明本身不合法**；同节字段表又把
 1 号字段描述为 `repeated uint32`，每个元素包含 x / y / is_high_light 三个 uint32。因此存在两种解读：
 
 - **`flat`**：按代码块字面理解为字段 1 的 packed repeated uint32——8 个目标 × 3 个值 = **24 个 uint32**；
@@ -358,7 +358,7 @@ print(rm.radar_wire_format())        # "flat"
 ]}
 ```
 
-因此同一个场景文件在两种线格式下都能用，验证脚本（`tests/check_records.py`）的期望值也不用改。
+因此同一个场景文件在两种线格式下都能用，验证脚本（`tests/check_records.py`）的期望值也不用修改。
 
 ### 验证
 
@@ -367,7 +367,7 @@ bash tests/run_radar_wire.sh
 ```
 
 它做三件事：① 用原始 MQTT 报文断言 `nested` 是 8 个嵌套子消息；② 断言 `flat` 是字段 1 的
-24 个 packed uint32；③ 用 `flat` 让 server + client 跑完整 32 条往返。探针见
+24 个 packed uint32；③ 用 `flat` 让 server + client 运行完整 32 条往返。探针见
 [tests/radar_wire_probe.py](tests/radar_wire_probe.py)（零第三方依赖，手工解析 MQTT/protobuf）。
 
 ---
@@ -404,7 +404,7 @@ bash tests/run_radar_wire.sh
 ### 启动
 
 ```bash
-# 服务器面板：监听地址/端口可在界面上改
+# 服务器面板：监听地址/端口可在界面上修改
 python3 python/run_server.py --host 127.0.0.1 --port 3333
 
 # 客户端面板：clientID = 官方机器人 ID
@@ -431,7 +431,7 @@ python3 python/run_client.py --lib /path/to/librm2027c.so
 | :-- | :-- |
 | 逐条指令启用/停止 | 左侧每一条指令（服务器 23 条下行 / 客户端 9 条上行）各有一个面板和「启用」勾选框 |
 | 发送频率 | 数值框，默认值取自官方表 2-1，旁边显示「官方 5Hz」作对照 |
-| 触发式发送 | 频率设为 0 时按钮变为「触发发送」，点一次发一次 |
+| 触发式发送 | 频率设为 0 时按钮变为「触发发送」，点一次发送一次 |
 | 内容编辑 | 按官方字段表自动生成表单；bool 用复选框，bytes 支持文本或 `hex:00 11 22`，repeated 空格分隔，嵌套消息填 JSON |
 | JSON 模式 | 每个面板右上角 `{ }` 可直接编辑整条指令的 JSON |
 | 接收显示 | 右侧表格显示每条指令的次数 + 最新内容，下方滚动日志 |
@@ -480,7 +480,7 @@ docs/                     协议变更分析 / 移植说明 / 调研文档 / 归
 | [docs/V1.0.0-变更分析.md](docs/V1.0.0-变更分析.md) | RM2026 V2.0.0 → RM2027 V1.0.0 的逐条协议差异与实现影响 |
 | [docs/PORTING.md](docs/PORTING.md) | 从 RM2026 SDK 移植的过程、命名对照、重新生成协议数据的步骤、验证矩阵 |
 | [docs/互操作验证-第三方实现.md](docs/互操作验证-第三方实现.md) | 与第三方开源实现的双向互操作验证（2026 V2.0.0 对照、schema 差异、结论） |
-| [docs/README-full.md](docs/README-full.md) | 旧版完整 README（实现细节、验证方法、踩坑记录；已归档） |
+| [docs/README-full.md](docs/README-full.md) | 旧版完整 README（实现细节、验证方法、问题记录；已归档） |
 | [docs/官方码流封帧调研.md](docs/官方码流封帧调研.md) | 官方图传封帧规则的原文核对 |
 | [docs/UDP-字节序调研.md](docs/UDP-字节序调研.md) | 8 字节包头字节序的调研与实测 |
 

@@ -152,7 +152,7 @@ class MainWindow(QMainWindow):
         cl.addWidget(bar)
         cl.addWidget(split, 1)
 
-        # 图传页：服务器侧发图传，客户端侧收图传 + 实时预览
+        # 图传页：服务器侧发送图传，客户端侧接收图传 + 实时预览
         if self.role == "server":
             self.video = VideoSendPanel(host if host else "127.0.0.1")
         else:
@@ -197,7 +197,7 @@ class MainWindow(QMainWindow):
         self.state_label.setStyleSheet("color:%s;font-weight:bold;" % color)
 
     def changeEvent(self, ev):
-        # 系统切换明暗主题时重建样式，避免写死的颜色对不上
+        # 系统切换明暗主题时重建样式，避免固定的颜色与主题不匹配
         from PyQt5.QtCore import QEvent
         if ev.type() == QEvent.ApplicationPaletteChange:
             self.refresh_theme()
@@ -323,7 +323,7 @@ class MainWindow(QMainWindow):
         """关闭窗口：先收尾协议连接与图传线程。
 
         注意：这个类历史上**定义过两个 closeEvent**，后一个覆盖前一个，
-        导致图传清理成了死代码（关窗口后显示线程还在跑）。
+        导致图传清理成了无用代码（关窗口后显示线程仍在运行）。
         现在只保留这一个，两件事都做。
 
         图传的 stop() 在超时后会保留资源（不强杀线程，见 video_panel 的说明），

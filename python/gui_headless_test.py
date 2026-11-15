@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""离屏（无显示器）跑真实主窗口，验证：
+"""离屏（无显示器）运行真实主窗口，验证：
   1. 服务器/客户端两个窗口能启动并互联
   2. 「启用 + 官方频率」能自动按频率发送（默认频率取自文档）
-  3. 频率为 0 的指令变成「触发发送」按钮，点击才发
+  3. 频率为 0 的指令变成「触发发送」按钮，点击才发送
   4. 接收区实时显示，字段值正确
 """
 import os, sys, time
@@ -136,10 +136,10 @@ def main():
         got_bg = (m.group(1).strip().lower() if m else "")
         check(got_bg == c["panel"].lower(),
               "%s主题：面板背景取自系统调色板（%s）" % (name, got_bg or "未设置"))
-        # 关键回归：背景不能写死成浅色（否则深色主题下白底白字）
+        # 关键回归：背景不能固定为浅色（否则深色主题下白底白字）
         is_light = theme.contrast_ratio(got_bg or "#000000", "#000000") > 10
         check(not (is_light and dark),
-              "%s主题：背景不是写死的浅色（%s）" % (name, got_bg))
+              "%s主题：背景取自系统调色板（%s）" % (name, got_bg))
 
         # 面板标题控件本身也必须是可读的（深色下不该是黑字 / 浅色下不该是白字）
         title = ws.panels[0].findChild(type(ws.panels[0].doc_label), None)
@@ -205,7 +205,7 @@ def main():
     th.start()
     # 画面现在由显示线程驱动（跨线程信号 -> GUI 线程的槽），
     # 所以只要把事件循环转起来就会自动更新；不需要再手动 tick。
-    # 另外：整套测试会被 run_all.sh 串行跑，机器忙时时序会抖，
+    # 另外：整套测试会被 run_all.sh 串行运行，机器忙时时序会抖，
     # 所以**不要用固定秒数**做断言，一律「轮询等条件」。
     def pump_rx(sec):
         t = time.time()
@@ -238,7 +238,7 @@ def main():
 
     # 性能回归防护（稳态窗口，增量测量）：
     # 必须只取「事件循环正常转」的一段来算比例 —— 探针改动里若夹着 GUI 停摆，
-    # 停摆期间画不出来，比例会天然偏低，那样测的就不是抽帧问题了。
+    # 停摆期间画不出来，比例会天然偏低，那样就测不到抽帧问题了。
     _s0, _d0 = rxp._shown, rxp._rx.stats.frames_decoded
     pump_rx(1.0)
     _s1, _d1 = rxp._shown, rxp._rx.stats.frames_decoded
@@ -248,7 +248,7 @@ def main():
           % (_s1 - _s0, _d1 - _d0, _d_ratio * 100))
 
     # 「只保留最新帧」的**可观测语义**：GUI 停摆一段时间后恢复，
-    # 第一个渲染出来的就必须是新帧，而不是停摆前那帧。
+    # 第一个渲染出来的必须是新帧。
     # （只断言"最终能追上"是不够的 —— 曾经旧实现在这里会先闪一下旧画面。）
     rendered = []
     _orig_set = rxp.preview.set_image
@@ -373,7 +373,7 @@ def main():
               if hasattr(txp, "_display") else txp._worker is None,
               "停止后不再持有 worker 引用")
 
-        # 反复启停：worker 曾经因为挂了 QObject parent 而永不释放，
+        # 反复启停：worker 曾经因为绑定了 QObject parent 而永不释放，
         # 连带 sender/receiver 和 NumPy 缓冲一起泄漏（实测 20 次残留 118MB）。
         import gc
         for _ in range(5):
@@ -390,7 +390,7 @@ def main():
     print("== 10. 主窗口关闭时的图传生命周期 ==")
     # 注意：MainWindow 已在模块顶部导入过。这里**不要**再 import 一次 ——
     # 函数内的 import 会让它在整个 main() 里变成局部变量，
-    # 于是前面第 42 行的用法会报 UnboundLocalError（已踩过）。
+    # 于是前面第 42 行的用法会报 UnboundLocalError（已遇到过）。
     from PyQt5.QtGui import QCloseEvent
 
     WIN_PORT = VIDEO_PORT + 20

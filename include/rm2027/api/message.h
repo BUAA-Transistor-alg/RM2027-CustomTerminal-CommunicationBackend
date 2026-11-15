@@ -35,7 +35,7 @@ std::vector<std::string> downlinkNames();     // 服务器 -> 客户端，23 条
 std::unique_ptr<Message> createMessage(const std::string &name);
 
 // ---------------------------------------------------------------------------
-// 序列化 / 反序列化（供调试、落盘、测试使用；正常收发无需手工调用）
+// 序列化 / 反序列化（供调试、保存、测试使用；正常收发无需手工调用）
 // ---------------------------------------------------------------------------
 std::string toBinary(const Message &msg);
 std::unique_ptr<Message> fromBinary(const std::string &name, const void *data, std::size_t size,

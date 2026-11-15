@@ -71,7 +71,7 @@ bool VideoReceiver::start(std::string *error) {
     }
     int one = 1;
     ::setsockopt(socket_, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-    // 1080p60 突发很大，接收缓冲开大，尽量不丢在本地
+    // 1080p60 突发很大，接收缓冲开大，尽量不在本地丢弃
     int rcvbuf = 16 * 1024 * 1024;
     ::setsockopt(socket_, SOL_SOCKET, SO_RCVBUF, &rcvbuf, sizeof(rcvbuf));
 
@@ -151,7 +151,7 @@ void VideoReceiver::sweepStale(int64_t now) {
             ++it;
         }
     }
-    // 同时在组的帧太多 -> 丢最旧的
+    // 同时在组的帧太多 -> 丢弃最旧的
     while (pending_.size() > opt_.maxPendingFrames) {
         auto it = pending_.begin();
         framesAbandoned_.fetch_add(1);
@@ -164,7 +164,7 @@ void VideoReceiver::enqueueAu(uint16_t frameNumber, std::string au) {
     {
         std::lock_guard<std::mutex> lk(auMutex_);
         if (auQueue_.size() >= opt_.auQueueDepth) {
-            // 队满：整队丢弃并等下一个关键帧（丢 delta 帧会破坏参考链）
+            // 队满：整队丢弃并等下一个关键帧（丢弃 delta 帧会破坏参考链）
             auQueue_.clear();
             overflow = true;
         }
@@ -321,7 +321,7 @@ void VideoReceiver::decodeLoop() {
         if (lastAuSeen_) {
             const uint16_t expectedNext = static_cast<uint16_t>(lastAuFrame_ + 1);
             if (auFrameNo != expectedNext) {
-                // 中间缺了帧 -> 参考链断裂。此时继续喂 P 帧会用过期参考解出**错误画面**，
+                // 中间缺了帧 -> 参考链断裂。此时继续喂 P 帧会用过期参考解码出**错误画面**，
                 // 所以立刻进入「等关键帧」状态，直到下一个 IDR/CRA 才恢复。
                 frameGaps_.fetch_add(1);
                 needKeyframe_ = true;

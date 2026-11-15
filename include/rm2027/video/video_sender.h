@@ -1,6 +1,6 @@
-// RM2027 图传 —— 发送端：吃图片、编 HEVC、打包 UDP
+// RM2027 图传 —— 发送端：接收图像、编码 HEVC、打包 UDP
 //
-// 与旧版（直接发 .h265 裸流）的区别：编码在 C++ 内部完成，
+// 与旧版（直接发送 .h265 裸流）的区别：编码在 C++ 内部完成，
 // 调用方只负责把一帧帧 BGR24 图像喂进来。
 //
 // 另带一组「故障注入」，专门用来压测接收端的稳定性。
@@ -24,8 +24,8 @@ struct VideoSenderOptions {
     EncoderConfig encoder;              // 默认 1920x1080@60
 
     // ---- 网络故障注入（0/false = 关闭）----
-    int dropEveryNthPacket{0};          // 每 N 个包丢 1 个
-    int duplicateEveryNthPacket{0};     // 每 N 个包重复发一次
+    int dropEveryNthPacket{0};          // 每 N 个包丢弃 1 个
+    int duplicateEveryNthPacket{0};     // 每 N 个包重复发送一次
     bool shuffleFragments{false};       // 打乱同一帧内分片的发送顺序
     bool corruptFrameTotal{false};      // 故意写错「当前帧总字节数」
     int frameNumberStep{1};             // 帧号步进（>1 制造跳号）

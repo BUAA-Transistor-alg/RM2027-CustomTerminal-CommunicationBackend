@@ -61,7 +61,7 @@ public:
     Client &operator=(const Client &) = delete;
 
     // 启动后台连接线程并立即返回。连接不上不会失败 —— 后台一直重试。
-    // 会最多等 firstConnectWaitMs 尝试完成首次「连接+订阅」（便于调用方紧接着发消息），
+    // 会最多等 firstConnectWaitMs 尝试完成首次「连接+订阅」（便于调用方紧接着发送消息），
     // 但即使没等到也照样返回 true，连接在后台继续。
     bool start(std::string *error = nullptr);
     void stop();
@@ -94,7 +94,7 @@ public:
         });
     }
 
-    // 所有收到的指令都会额外触发（在专属回调之后）。可用于日志/落盘/测试。
+    // 所有收到的指令都会额外触发（在专属回调之后）。可用于日志/保存/测试。
     void onAny(Handler cb);
 
     // ------------------------------------------------------------------

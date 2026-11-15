@@ -241,8 +241,8 @@ rm_handle rm_client_new(const char *host, uint16_t port, const char *client_id) 
         const std::string name = msg->name();
         emitMessage(h, name, toJson(*msg), std::string());
     });
-    // 连接状态变化也作为事件抛给上层（"connected" / "disconnected"），
-    // 这样 GUI 能即时显示「连接中/重连中」，而不是等 500ms 轮询才发现。
+    // 连接状态变化也作为事件上报给上层（"connected" / "disconnected"），
+    // 这样 GUI 能即时显示「连接中/重连中」，无需等待 500ms 轮询。
     h->client->onConnectionChanged([h](bool connected) {
         emitEvent(h, connected ? "connected" : "disconnected", std::string());
     });

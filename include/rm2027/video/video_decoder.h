@@ -3,7 +3,7 @@
 // 健壮性来自调研结论：
 //   * 码流格式未必是 H.265 -> 做格式探测（H.265 / H.264 / MJPEG）
 //   * GOP 可能很长 -> 中途接入要等 IDR；丢包后不重建解码器，标记等待关键帧自然重同步
-//   * 分辨率不写死 -> 按解码器实际输出自适应
+//   * 分辨率不固定 -> 按解码器实际输出自适应
 #pragma once
 
 #include <cstdint>
@@ -18,7 +18,7 @@ namespace rm2027 {
 class VideoDecoder {
 public:
     enum class Status {
-        FrameReady,     // 解出一帧，可用 frameData() 取
+        FrameReady,     // 解码出一帧，可用 frameData() 获取
         Buffering,      // 数据已喂，但解码器还没吐帧（需要更多数据）
         Error,          // 解码出错（调用方应等下一个关键帧）
     };
@@ -49,7 +49,7 @@ public:
     Status decode(const uint8_t *au, std::size_t size, std::string *error);
 
     // 冲刷解码器：取出因 B 帧重排序而缓存的帧。
-    // 发送结束后调用，可把尾部几帧也解出来（返回 FrameReady 就要取，直到不再返回）。
+    // 发送结束后调用，可把尾部几帧也解码出来（返回 FrameReady 就要取，直到不再返回）。
     Status flush(std::string *error);
 
     // decode() 返回 FrameReady 后取图像（BGR24，紧凑排列）。

@@ -1,17 +1,20 @@
-"""图传面板：服务器侧「喂图片发图传」，客户端侧「收图传 + 实时预览」。
+"""图传面板：服务器侧「传入图片并发送图传」，客户端侧「接收图传 + 实时预览」。
 
 要点
-  * 编解码都在 C++ 里完成，Python 只负责「读视频 -> 喂帧」和「取帧 -> 显示」
-  * 端口 / 视频文件在**停止状态**下可改（运行中禁用）
+  * 编解码都在 C++ 里完成，Python 只负责「读取视频 -> 传入帧」和「获取帧 -> 显示」
+  * 端口 / 视频文件在**停止状态**下可修改（运行中禁用）
   * 解码格式可「自动探测」或「手动固定为某一种」，运行中也能切
-  * **预览「尽量显示」**：由一个专门的显示线程持续取帧并转换，
-    而不是用定时器按固定频率去采样（采样会系统性丢帧，见下面 PreviewLink 的说明）
+  * **预览「尽量显示」**：由一个专门的显示线程持续取帧并转换；
+    定时器按固定频率采样会系统性丢帧（见下面 PreviewLink 的说明）
   * 所有颜色取自 gui.theme，明暗主题都正常
 
 显示流水线（收发两侧一致）
-    工作线程                                     GUI 线程
-    ─────────                                   ─────────
-    取一帧 -> 降采样 -> 转 QImage  ──槽──>  QPixmap.fromImage + setPixmap
+
+```mermaid
+flowchart LR
+  A[取一帧] --> B[降采样] --> C[转 QImage] -->|跨线程槽| D[QPixmap.fromImage + setPixmap]
+```
+
     总是消费并覆盖槽内容 —— 这样 GUI 恢复时拿到的一定是最新帧，
     不会先闪一下停摆前的旧画面（去掉背压的原因见 PreviewLink.wants()）
 """
@@ -69,8 +72,8 @@ def _thread_stuck(label, what: str) -> None:
 def bgr_to_qimage(img: np.ndarray, max_w: int = PREVIEW_MAX_W) -> tuple:
     """BGR24 numpy -> QImage（已按需整数降采样）。
 
-    用**整数抽取**（img[::k, ::k]）而不是插值缩放：抽取几乎不花时间，
-    预览画质足够；插值在 1080p 下反而是可观的开销。
+    用**整数抽取**（img[::k, ::k]）：抽取几乎不花时间，
+    预览画质足够；插值在 1080p 下开销可观。
 
     QImage 可以在非 GUI 线程创建（QPixmap 不行），所以这一步放在显示线程里做。
 
@@ -94,15 +97,15 @@ class PreviewLink:
     """显示线程 -> GUI 线程 的「最新帧」交接。
 
     为什么不用定时器采样：
-        定时器（比如 16ms）是按**时间**取帧的，只要帧率与定时器周期不是整除关系，
-        就会周期性地漏掉或重复帧 —— 这是系统性丢帧。这里改成：显示线程**每解出
+        定时器（比如 16ms）是按**时间**取帧的，只要帧率与定时器周期不能整除，
+        就会周期性地漏掉或重复帧 —— 这是系统性丢帧。这里改成：显示线程**每解码出
         一帧就来取**，GUI 线程能画多快就画多快，于是「尽量显示」。
 
     为什么不无限排队：
         显示端画不过来时，排队只会让画面越来越滞后（延迟累积）。所以只保留
-        最新一帧，旧的直接覆盖 —— 宁可丢旧帧，也要让操作手看到最新的画面。
+        最新一帧，旧的直接覆盖 —— 宁可丢弃旧帧，也要让操作手看到最新的画面。
 
-    通知做了合并：GUI 还没取走上一帧时不再重复通知，避免刷爆事件队列。
+    通知做了合并：GUI 还没取走上一帧时不再重复通知，避免事件队列积压。
     """
 
     def __init__(self) -> None:
@@ -129,7 +132,7 @@ class PreviewLink:
         """显示线程：放帧（**覆盖**槽里可能还没被取走的旧帧）。
 
         返回是否需要通知 GUI。通知做了合并：上一帧还没被取走时不再重复通知，
-        所以 GUI 再慢也不会被事件队列刷爆，且取到的始终是最新一帧。
+        所以 GUI 再慢也不会使事件队列积压，且取到的始终是最新一帧。
         """
         with self._lock:
             self._image = image
@@ -203,9 +206,9 @@ def _fmt_preview_caption(label: str, frame_no: int, src_w: int, src_h: int,
 # 服务器侧：发送图传
 # ===========================================================================
 class SendWorker(QThread):
-    """读视频文件 -> 缩放 -> 按帧率喂给 C++ 编码发送，同时产出发送预览。
+    """读取视频文件 -> 缩放 -> 按帧率喂给 C++ 编码发送，同时产出发送预览。
 
-    预览不再按固定帧率抽帧：**每发一帧就产出一帧预览**（预览关闭时除外）。
+    预览不再按固定帧率抽帧：**每发送一帧就产出一帧预览**（预览关闭时除外）。
     产出的帧直接覆盖 PreviewLink 里的旧帧，GUI 取到的始终是最新一帧。
     """
 
@@ -287,7 +290,7 @@ class SendWorker(QThread):
                 if sleep > 0:
                     time.sleep(sleep)
                 elif sleep < -interval * 5:
-                    next_t = time.time()      # 落后太多就重新对齐
+                    next_t = time.time()      # 落后太多就重新同步
             try:
                 self._tx.flush()
                 self.statsReady.emit(self._tx.stats)
@@ -453,7 +456,7 @@ class VideoSendPanel(QGroupBox):
         self._link.clear()
         self._link.enabled = self.preview_check.isChecked()
         self._shown = 0
-        # 故意不传 parent：QThread 一旦挂了 QObject parent，self._worker = None
+        # 故意不传 parent：QThread 一旦绑定了 QObject parent，self._worker = None
         # 之后它仍作为面板的子对象存活，连带它引用的 sender/receiver 和
         # NumPy 缓冲一起泄漏（实测启停 20 次残留 118MB）。
         self._worker = SendWorker(self._tx, path, self.fps_spin.value(), w, h,
@@ -479,7 +482,7 @@ class VideoSendPanel(QGroupBox):
             _disconnect_all(w)
             if not w.wait(THREAD_JOIN_MS):
                 # 绝不用 terminate()：线程可能正持着 PreviewLink 的锁被杀死，
-                # 锁会永久遗留，后面任何 clear()/take() 都会死等（已用故障注入复现）。
+                # 锁会永久遗留，后面任何 clear()/take() 都会永久等待（已用故障注入复现）。
                 # 也**不能**在这里把 self._worker 置空 —— 置空后第二次 stop()
                 # 会认为「没有 worker」而直接去释放 sender，可线程还活着在用
                 # 同一个对象（已复现：迟到帧照样画到已停止的界面上）。
@@ -606,7 +609,7 @@ class DisplayWorker(QThread):
         while not self._stop.is_set():
             # 先问「现在要不要」，再去 C++ 取帧。
             # 顺序不能反：get_frame() 会把 C++ 的最新帧槽消费掉，
-            # 如果取完才发现 GUI 忙而丢弃，槽里留下的反而是**更旧**的那一帧
+            # 如果取完才发现 GUI 忙而丢弃，槽里留下的是**更旧**的那一帧
             # （等于把「只保留最新帧」做成了「保留第一帧」）。
             if not self._link.wants():
                 if self._stop.wait(POLL_IDLE_SEC):   # 可被打断的休眠
@@ -757,7 +760,7 @@ class VideoReceivePanel(QGroupBox):
         self._shown = 0
         self._link.clear()
         self._link.enabled = self.preview_check.isChecked()
-        self._display = DisplayWorker(self._rx, self._link)   # 同上，不挂 parent
+        self._display = DisplayWorker(self._rx, self._link)   # 同上，不绑定 parent
         self._display.frameAvailable.connect(self._on_frame_available)
         self._display.start()
         self._stats_timer.start()
@@ -768,7 +771,7 @@ class VideoReceivePanel(QGroupBox):
         if self._display is not None:
             w = self._display
             w.stop()
-            _disconnect_all(w)      # 同上：先断开，迟到的帧不能再改已停止的界面
+            _disconnect_all(w)      # 同上：先断开，迟到的帧不能再修改已停止的界面
             if not w.wait(THREAD_JOIN_MS):
                 _thread_stuck(self.state_label, "接收预览")
                 return              # 保留 self._display 与 receiver，等下次 stop() 继续等

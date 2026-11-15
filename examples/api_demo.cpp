@@ -61,9 +61,9 @@ int runServer(uint16_t port) {
         return 1;
     }
 
-    // 等客户端把「要发的这两个 topic」订阅好再发。客户端是逐条订阅的，
+    // 等客户端把「要发送的这两个 topic」订阅好再发送。客户端是逐条订阅的，
     // subscribedClientCount()>0 只代表第一个 topic 订好了，不代表 GameStatus /
-    // RobotPosition 都订好了 —— 直接发第一条会落在窗口里被丢（曾间歇复现）。
+    // RobotPosition 都订好了 —— 直接发送第一条会落在窗口里被丢弃（曾间歇复现）。
     {
         const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
         while ((server.topicSubscriberCount("GameStatus") == 0 ||
@@ -76,7 +76,7 @@ int runServer(uint16_t port) {
                     server.topicSubscriberCount("RobotPosition"));
     }
 
-    // ---- 发送方：构造结构体 -> 按名字发 ----
+    // ---- 发送方：构造结构体 -> 按名字发送 ----
     for (int round = 0; round < 3; ++round) {
         auto st = std::make_unique<rm2027::GameStatus>();
         st->current_round = 1;
@@ -84,7 +84,7 @@ int runServer(uint16_t port) {
         st->current_stage = 4;         // 比赛中
         st->red_score = 100 + round;
         st->blue_score = 80;
-        st->game_result = 255;         // 官方约定：非结算阶段发 255
+        st->game_result = 255;         // 官方约定：非结算阶段发送 255
         server.send(std::move(st));    // 名字自动取自类型
 
         auto pos = std::make_unique<rm2027::RobotPosition>();
@@ -110,7 +110,7 @@ int runClient(uint16_t port) {
     opt.host = "127.0.0.1";
     opt.port = port;
     opt.clientId = "3";   // 官方规定：clientID = 机器人 ID
-    // 只订阅下面 on<...> 绑定的两个 topic（而不是全部 23 条下行），
+    // 只订阅下面 on<...> 绑定的两个 topic，
     // 这样服务端能用 topicSubscriberCount 精确判断就绪。
     opt.subscribeAllDownlink = false;
 
@@ -143,7 +143,7 @@ int runClient(uint16_t port) {
         }
     }
 
-    // ---- 发送方：按指令名发 ----
+    // ---- 发送方：按指令名发送 ----
     auto dart = std::make_unique<rm2027::DartCommand>();
     dart->target_id = 1;          // 前哨站
     dart->open = true;

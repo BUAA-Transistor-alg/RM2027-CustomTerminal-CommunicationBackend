@@ -3,7 +3,7 @@
 本目录存放本项目的第三方依赖。
 
 **约定：只入库「获取方式」，不入库二进制。** 构建产物都在 `.gitignore` 里
-（`protobuf-21.12/`、`build-protobuf/`），`git clone` 之后跑一次脚本即可。
+（`protobuf-21.12/`、`build-protobuf/`），`git clone` 之后运行一次脚本即可。
 
 ---
 
@@ -29,7 +29,7 @@ third_party/fetch_protobuf.sh          # 下载 + 校验 sha256 + 编译安装�
 装好后是 `third_party/protobuf-21.12/{bin,include,lib}`，CMake 会自动优先用它。
 脚本会把 `LICENSE.protobuf` 一并复制进安装目录（BSD-3-Clause 要求随二进制保留版权声明）。
 
-网络不通时可以手动下载后重跑：
+网络不通时可以手动下载后重新运行：
 
 ```bash
 curl -fL -o third_party/build-protobuf/protobuf-cpp-3.21.12.tar.gz \
@@ -38,7 +38,7 @@ third_party/fetch_protobuf.sh
 ```
 
 如果 `third_party/protobuf-21.12` 不存在，CMake 会**回退到系统 protobuf**——
-但系统版本低于 3.15 时编译会失败，所以请先跑脚本。
+但系统版本低于 3.15 时编译会失败，所以请先运行脚本。
 
 ---
 
@@ -82,7 +82,7 @@ FFmpeg 的 `libx265` 封装会链接 x265。我们图传发送端的 HEVC 编码
 > 说明：RM 官方客户端接收的是 **H.265 解码**，这部分不涉及 x265；
 > 只有「我们的服务器/模拟器要把画面编成 H.265 发出去」这一步才用到。
 
-### 3.2 PyQt5 是 GPL-3，不是 LGPL
+### 3.2 PyQt5 的许可证是 GPL-3
 
 PyQt5 采用 GPL-3 / 商业双授权。**分发链接了 PyQt5 的界面程序会触发 GPL-3 义务**
 （提供完整对应源码、保留声明）。若不想被 GPL 约束，可选：

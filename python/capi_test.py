@@ -23,7 +23,7 @@ def check(cond, msg):
 
 
 def expect_reject(desc, fn, *keys):
-    """发送不合规消息必须抛 RuntimeError，且错误信息里带校验原因关键词。"""
+    """发送不合规消息必须抛出 RuntimeError，且错误信息里带校验原因关键词。"""
     try:
         fn()
     except RuntimeError as e:
@@ -73,7 +73,7 @@ def main():
     cli.send("MapClickCmd", {"is_send_all": 2, "robot_id": ROBOT_ID_7B, "mode": 1,
                              "enemy_id": 11, "map_x": 1.5, "map_y": -2.5})
 
-    # 等客户端把「要发的这几个 topic」订阅好再发。客户端是逐条订阅的，
+    # 等客户端把「要发送的这几个 topic」订阅好再发送。客户端是逐条订阅的，
     # subscribed_client_count>0 只代表第一个 topic 订好了，不代表这几个都订好。
     for _topic in ("GameStatus", "RuneStatusSync", "RobotModuleStatus", "RadarInfoToClient",
                    "GlobalUnitStatus", "RobotDynamicStatus"):

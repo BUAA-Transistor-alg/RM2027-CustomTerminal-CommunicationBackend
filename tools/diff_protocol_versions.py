@@ -37,7 +37,7 @@ RadarInfoToClient：官方 PDF 第 2.2.19 节的代码块字面写作::
          repeated uint32 RadarSingleRobotInfo;
     }
 
-——该声明缺少字段号、字段名使用了结构体名 RadarSingleRobotInfo，本身不是合法的 proto 声明。本项目据此
+——该声明缺少字段号、字段名使用了结构体名 RadarSingleRobotInfo，本身不合法。本项目据此
 给出两种「都实现、可切换」的线格式：
 
 * NestedMessage（默认）：repeated RadarSingleRobotInfo radar_single_robot_info = 1;
@@ -62,7 +62,7 @@ import os
 import re
 import sys
 
-# 官方代码块里并列写出的辅助 message（不是 MQTT topic，本项目实现为嵌套定义）。
+# 官方代码块里并列写出的辅助 message，本项目实现为嵌套定义。
 AUX_MESSAGES = {"RadarSingleRobotInfo"}
 
 # 唯一被认可的「有意偏离」：官方字面 vs 本项目双线格式。
@@ -215,7 +215,7 @@ def fmt_field(f):
 
 
 def print_message_diff(official, repo, indent="    "):
-    """打印一条消息的逐字段差异（按字段名对齐，缺失/多余也列出）。"""
+    """打印一条消息的逐字段差异（按字段名匹配，缺失/多余也列出）。"""
     off_by_name = {f["name"]: f for f in official}
     rep_by_name = {f["name"]: f for f in repo}
     for f in official:
@@ -241,7 +241,7 @@ def print_known_deviation(spec, repo, variants):
     print("\n官方 PDF 第 2.2.19 节代码块原文：")
     for line in off["raw"]:
         print("    " + line)
-    print("    ↑ 说明：该声明缺少字段号、字段名使用了结构体名，本身不是合法的 proto 声明；")
+    print("    ↑ 说明：该声明缺少字段号、字段名使用了结构体名，本身不合法；")
     print("      若按字面线格式解释，则是 packed repeated uint32。")
     print("\n本项目声明（主 proto，默认线格式 NestedMessage）：")
     for line in rep["raw"]:
@@ -395,7 +395,7 @@ def main(argv=None):
         conclusion += "；消息集合 0 缺失 0 多余"
     print(conclusion)
     if known_diffs:
-        print("  已知偏离不是缺陷：RadarInfoToClient 的线格式双模式见上方【C】与 README「雷达线格式」。")
+        print("  已知偏离属于预期设计：RadarInfoToClient 的线格式双模式见上方【C】与 README「雷达线格式」。")
     ok = not missing and not extra and not unexpected
     if args.strict:
         ok = ok and not known_diffs

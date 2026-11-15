@@ -23,7 +23,7 @@ int64_t nowMs() {
 } // namespace
 
 std::vector<EncoderConfig> VideoSender::stressProfiles(const EncoderConfig &base) {
-    // 第一条是"正常"配置；其余逐项加压，专门用来搞客户端。
+    // 第一条是"正常"配置；其余逐项加压，专门用来压测客户端。
     std::vector<EncoderConfig> v;
     v.push_back(base); // 0: 正常
 
@@ -40,7 +40,7 @@ std::vector<EncoderConfig> VideoSender::stressProfiles(const EncoderConfig &base
         c.slices = 4;
         v.push_back(c);
     }
-    {   // 3: 长 GOP + 参数集只发一次（丢包后长时间无法恢复）
+    {   // 3: 长 GOP + 参数集只发送一次（丢包后长时间无法恢复）
         EncoderConfig c = base;
         c.gopSize = 300;
         c.repeatHeaders = false;
@@ -123,7 +123,7 @@ bool VideoSender::start(std::string *error) {
         return false;
     }
 
-    // 发送缓冲开大一点，避免 1080p60 突发时丢在本地
+    // 发送缓冲开大一点，避免 1080p60 突发时在本地丢弃
     int sndbuf = 8 * 1024 * 1024;
     ::setsockopt(socket_, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf));
 
@@ -255,9 +255,9 @@ bool VideoSender::sendFrame(const uint8_t *bgr, int width, int height, int strid
         }
     }
 
-    // flush() 之后编码器处于 EOF 状态，再发帧会失败。
+    // flush() 之后编码器处于 EOF 状态，再发送帧会失败。
     // 这里自动重开（会发出新的参数集 + 关键帧，对码流是合法的），
-    // 免得调用方踩坑。
+    // 避免调用方误用。
     if (encoder_->flushed()) {
         std::string reopenErr;
         if (!encoder_->open(opt_.encoder, &reopenErr)) {

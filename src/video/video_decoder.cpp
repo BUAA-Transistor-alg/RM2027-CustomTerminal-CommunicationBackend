@@ -58,11 +58,11 @@ const char *videoCodecName(VideoCodec c) {
 VideoCodec VideoDecoder::detectCodec(const uint8_t *data, std::size_t size) {
     // 只做「有把握」的判断；没把握就返回 Unknown，让调用方**保持当前解码器**。
     //
-    // 踩过的两个坑：
-    //  1) 对每个 AU 硬判 H.265/H.264 -> 不含参数集的 P/B 帧被误判，解码器反复切换；
+    // 判断依据：
+    //  1) 对每个 AU 强制判定 H.265/H.264，不含参数集的 P/B 帧会被误判，解码器反复切换；
     //  2) 单字节判据有歧义：HEVC 的 IDR_N_LP(type 20) 首字节 0x28，
     //     与 H.264 的 PPS(0x28) 完全相同，只看一字节必然误判。
-    // 现在：扫一遍 AU 里所有 NAL，按证据计分。
+    // 因此扫一遍 AU 里所有 NAL，按证据计分。
     if (!data || size < 5) return VideoCodec::Unknown;
 
     // JPEG: FF D8 FF
@@ -95,7 +95,7 @@ VideoCodec VideoDecoder::detectCodec(const uint8_t *data, std::size_t size) {
 
         // HEVC 参数集：0x40/0x42/0x44（H.264 语义下是 type 0/2/4，无歧义）
         if (h265Type == 32 || h265Type == 33 || h265Type == 34) { score265 += 3; continue; }
-        // H.264 参数集/AUD：0x67/0x68/0x09（HEVC 语义下不是参数集，无歧义）
+        // H.264 参数集/AUD：0x67/0x68/0x09（HEVC 语义下不视为参数集，无歧义）
         if (b0 == 0x67 || b0 == 0x68 || b0 == 0x09) { score264 += 3; continue; }
         // HEVC 的 2 字节 NAL 头：layer_id 低位为 0、temporal_id_plus1 通常为 1 -> b1 == 0x01
         if (h265Type >= 0 && h265Type <= 31) {
@@ -192,7 +192,7 @@ bool VideoDecoder::open(VideoCodec codec, std::string *error) {
     //
     // 依据：mpv 默认就打开 SHOW_ALL，理由是播放器应该"尽可能输出任何东西"，
     // 包括关键帧之前的帧和已损坏的帧；对操作手来说，带损伤的画面能看出运动趋势，
-    // 比冻结画面有用得多。所以这里绝不因为"参考链断了"就停喂或丢帧。
+    // 比冻结画面有用得多。所以这里绝不因为"参考链断了"就停止喂入或丢弃帧。
     impl_->ctx->flags |= AV_CODEC_FLAG_LOW_DELAY | AV_CODEC_FLAG_OUTPUT_CORRUPT;
     impl_->ctx->flags2 |= AV_CODEC_FLAG2_SHOW_ALL;
     impl_->ctx->err_recognition = AV_EF_IGNORE_ERR;
@@ -235,7 +235,7 @@ VideoDecoder::Status VideoDecoder::decode(const uint8_t *au, std::size_t size, s
 
     int ret = avcodec_send_packet(impl_->ctx, impl_->packet);
     if (ret == AVERROR(EAGAIN)) {
-        // 解码器还没吃下上一个包：先收一帧腾地方，再重发，避免丢 AU
+        // 解码器还没接收上一个包：先接收一帧腾出位置，再重发，避免丢弃 AU
         avcodec_receive_frame(impl_->ctx, impl_->frame);
         av_frame_unref(impl_->frame);
         ret = avcodec_send_packet(impl_->ctx, impl_->packet);

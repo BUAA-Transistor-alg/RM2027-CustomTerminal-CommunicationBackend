@@ -1,8 +1,8 @@
 // RM2027 客户端对外接口 —— 基于 Paho MQTT C++ 的实现（Paho 细节全部隐藏在本文件内）
 //
 // 连接策略（重要）：
-//   * 不用 Paho 的 automatic_reconnect，而是自己在一条「连接线程」里串行处理
-//     「连接 -> 订阅 -> 等待断线 -> 重连」。初始连不上会一直重试，断线后也必定
+//   * 连接与重连由一条独立的「连接线程」串行处理
+//     「连接 -> 订阅 -> 等待断线 -> 重连」（Paho 的 automatic_reconnect 关闭）。初始连不上会一直重试，断线后也必定
 //     重连并**重新订阅**（clean_session=true 时 broker 会清掉订阅）。
 //   * 订阅失败会一直重试，直到成功或断线，不会「三次就放弃」。
 //   * stop() 之后若还收到迟到的 CONNACK，connected() 里会立即再断开。
@@ -83,7 +83,7 @@ struct Client::Impl : public mqtt::callback {
     std::unique_ptr<mqtt::async_client> client;
     Dispatcher dispatcher;
 
-    // 这些 atomic 的**写**在正常路径里都持 mutex 再改（保证 cv 不丢唤醒）。
+    // 这些 atomic 的**写入**在正常路径里都持 mutex 再修改（保证 cv 不丢失唤醒）。
     // 唯一的例外是 requestStop()（信号处理里调用，不能加锁）。
     std::atomic<bool> running{false};
     std::atomic<bool> connectedFlag{false};
@@ -128,7 +128,7 @@ struct Client::Impl : public mqtt::callback {
             cv.notify_all();
 
             // 等断线（或停止）。**必须**用内部循环：wait_for 超时只是重新检查，
-            // 绝不能回到外层 while 重新跑 subscribeAll() —— 否则稳定连接下会每
+            // 绝不能回到外层 while 重新调用 subscribeAll() —— 否则稳定连接下会每
             // 500ms 重订阅一遍（且 retained 消息被反复投递，已实测复现）。
             while (running.load() && connectedFlag.load()) {
                 waitPredicate([this] { return !running.load() || !connectedFlag.load(); }, 500);
@@ -343,8 +343,8 @@ void Client::stop() {
 
     if (impl_->connectThread.joinable()) impl_->connectThread.join();
 
-    // 兜底：迟到的 CONNACK 可能在这之后又让连接成立（connected() 里会因
-    // !running 立即断开，但这里再兜一层，保证 stop() 返回时没有活跃连接）。
+    // 补充处理：迟到的 CONNACK 可能在这之后又让连接成立（connected() 里会因
+    // !running 立即断开，但这里再确认一次，保证 stop() 返回时没有活跃连接）。
     if (impl_->client && impl_->client->is_connected()) {
         try {
             impl_->client->disconnect()->wait_for(std::chrono::seconds(3));
@@ -356,7 +356,7 @@ void Client::stop() {
 void Client::requestStop() {
     // 信号安全：**绝不能加锁**。信号处理里若取同一把锁、而被打断的线程恰好持锁，
     // 就会永久死锁（已实测复现）。运行标志用原子写；notify 是尽力唤醒，
-    // 连接线程的等待都是 wait_for 轮询式，即使这个 notify 丢了也能在几百毫秒内
+    // 连接线程的等待都是 wait_for 轮询式，即使这个 notify 丢失了也能在几百毫秒内
     // 自己醒来看到 running==false。
     impl_->running.store(false);
     impl_->cv.notify_all();

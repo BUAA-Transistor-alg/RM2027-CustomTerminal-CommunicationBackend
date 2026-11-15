@@ -2,7 +2,7 @@
 # 雷达线格式双模式验证（官方 §2.2.19 字面 vs 嵌套 message）
 #   1) nested 模式：抓原始 MQTT PUBLISH，断言字段 1 = 8 个嵌套子消息
 #   2) flat   模式：抓原始 MQTT PUBLISH，断言字段 1 = packed 24 个 uint32
-#   3) flat 端到端：server + client 都用 flat，跑完整 32 条协议往返（JSON 仍是嵌套形式）
+#   3) flat 端到端：server + client 都用 flat，运行完整 32 条协议往返（JSON 仍是嵌套形式）
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"

@@ -528,10 +528,10 @@ struct MqttBroker::Impl {
                 RM_WARN("broker", "accept 失败: " << std::strerror(errno));
                 continue;
             }
-            // 发送超时（关键）：向一个半死/停止读取的连接 send() 会无限阻塞，
-            // 而 deliver() 是同步逐个会话发送的 —— 一个死连接会把投递给
+            // 发送超时（关键）：向一个已半关闭或停止读取的连接 send() 会无限阻塞，
+            // 而 deliver() 是同步逐个会话发送的 —— 一个失效连接会把投递给
             // **所有**客户端的线程一起卡死。设 2 秒超时，超时后 writeAll
-            // 失败、会话被标记 closed 并由 reaper 清理，把伤害限制在 2 秒内。
+            // 失败、会话被标记 closed 并由 reaper 清理，把影响限制在 2 秒内。
             struct timeval sndto{2, 0};
             ::setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &sndto, sizeof(sndto));
             char ip[64] = {0};

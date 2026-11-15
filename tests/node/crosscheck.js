@@ -31,8 +31,8 @@ const UP = arg('up', path.join(ROOT, 'tests', 'scenarios', 'all_up.json'));
 const DURATION = parseInt(arg('duration', '12'), 10) * 1000;
 
 // keepCase: true —— 字段名保持官方 proto 里的 snake_case。
-// 这样 fromObject() 能直接吃场景文件里的 snake_case；输出给 check_records.py
-// 时再用 toJsonName() 转成 C++ protobuf 的 JSON 名（见下），两边就能逐字段对齐。
+// 这样 fromObject() 能直接读取场景文件里的 snake_case；输出给 check_records.py
+// 时再用 toJsonName() 转成 C++ protobuf 的 JSON 名（见下），两边就能逐字段一致。
 const root = new protobuf.Root();
 for (const f of ['rm2027_client_up.proto', 'rm2027_client_down.proto']) {
     protobuf.parse(fs.readFileSync(path.join(ROOT, 'proto', f), 'utf8'), root,
@@ -41,7 +41,7 @@ for (const f of ['rm2027_client_up.proto', 'rm2027_client_down.proto']) {
 const upPkg = root.lookup('rm_client_up');
 const downPkg = root.lookup('rm_client_down');
 
-// C++ protobuf 的 JSON 字段名（ToJsonName）：删掉下划线并把其后的字母/数字大写，
+// C++ protobuf 的 JSON 字段名（ToJsonName）：删除下划线并把其后的字母/数字大写，
 // 例如 outpost_R_health -> outpostRHealth、modular_42mm -> modular42mm。
 // 注意 protobufjs 默认的 camelCase 规则不同（outpost_R_health -> outpost_RHealth），
 // 所以这里显式按 C++ 的规则转换，才能与 check_records.py 的期望键名一致。
@@ -84,9 +84,9 @@ function ts() {
     });
     emit({ ts: ts(), ev: 'connected', clientId: 'node-crosscheck' });
 
-    // 注意：message 处理器必须在订阅【之前】挂上。
-    // mqtt.js 只会把消息派发给已经注册的监听器，订阅完成后再挂 handler，
-    // 那个窗口里到达的消息会被直接丢掉（实测会丢掉第一条 GameStatus）。
+    // 注意：message 处理器必须在订阅【之前】注册。
+    // mqtt.js 只会把消息派发给已经注册的监听器，订阅完成后再注册 handler，
+    // 那个窗口里到达的消息会被直接丢弃（实测会丢弃第一条 GameStatus）。
     client.on('message', (topic, payload) => {
         received++;
         const T = downPkg.lookupType(topic);
@@ -107,7 +107,7 @@ function ts() {
     emit({ ts: ts(), ev: 'subscribed', ok: downTopics.length, total: downTopics.length });
 
 
-    // 等服务器先把下行发过来，再发上行（避免抢跑）
+    // 等服务器先把下行发送过来，再发送上行（避免提前发送）
     await new Promise(r => setTimeout(r, 400));
 
     for (const step of upSteps) {

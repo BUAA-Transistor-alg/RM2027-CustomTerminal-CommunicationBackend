@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# 把测试跑出来的界面截图同步进 docs/images/，供 README 引用。
+# 把测试生成的界面截图同步进 docs/images/，供 README 引用。
 #
 # 为什么需要这个：
 #   README 里的图必须入库，而截图是 python/out/ 下的测试产物（该目录不入库）。
-#   所以定稿的截图放在 docs/images/，测试重跑后用它同步一次。
+#   所以定稿的截图放在 docs/images/，测试重新运行后用它同步一次。
 #
 # 用法:
 #   tools/update_readme_images.sh            # 同步
@@ -15,7 +15,7 @@ ROOT="$(cd "$HERE/.." && pwd)"
 SRC="$ROOT/python/out"
 DST="$ROOT/docs/images"
 
-# README 里用到的图（改这里就够，README 的路径规则是 docs/images/<名字>）
+# README 里用到的图（修改这里就够，README 的路径规则是 docs/images/<名字>）
 IMAGES=(
     gui_server_live.png     # 服务器面板（浅色，含发送图传）
     gui_client_live.png     # 客户端面板（浅色，含接收图传）

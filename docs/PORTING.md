@@ -33,7 +33,7 @@
 
 ## 2. 协议数据的重新生成
 
-三个生成器构成唯一事实来源，禁止手改产物：
+三个生成器构成唯一事实来源，禁止手动修改产物：
 
 ```bash
 # 0) 官方 PDF → 文本（保留版式）
@@ -80,7 +80,7 @@ python3 tests/gen_scenario.py
    由 11 条改为 9 条，`gen_freq.py` 的固定频率表与触发式表同步删除对应条目。
 3. **频率交叉校验适配 2027 版式**：2027 表格列更窄，"触发式发送，发送频率最高为 10Hz" 会与
    其它列交错换行，原「字面连续匹配」会误报；改为只要求「最高」与「<n>Hz」出现在同一窗口。
-4. **clientID 文档纠正**：旧 README/CLI 写「蓝方 11..17」，与官方附录二（蓝方 101..107）矛盾；
+4. **clientID 文档纠正**：旧 README/CLI 标注「蓝方 11..17」，与官方附录二（蓝方 101..107）矛盾；
    本仓库按「clientID = 官方机器人 ID」统一（红 1/3-5/6/7，蓝 101/103-105/106/107，2/102 为保留位）。
 5. **Node 交叉验证的 JSON 键名**：protobufjs 默认 camelCase 转换与 C++ protobuf 的
    `ToJsonName` 对含大写字母的字段名结果不同（如 `outpost_R_health`）。`tests/node/crosscheck.js`
@@ -97,17 +97,17 @@ python3 tests/gen_scenario.py
 | 构建（全量重编） | `bash build.sh`（CMake 生成 Unix Makefiles；等价 `cmake -S . -B build && make -C build -j`） | 0 error / 0 warning |
 | 与官方 PDF 逐字段**字面**一致 | `python3 tools/diff_protocol_versions.py p2027.txt proto` | **31/32 条协议消息字面一致 + 1 条有意偏离**（`RadarInfoToClient` 雷达双线格式：默认嵌套、可切 flat）；辅助 message 字面一致 |
 | 协议全量（32 条逐字段） | `bash tests/run_protocol.sh` | 下行 23/23、上行 9/9 ✅ |
-| 纯 C 接口 | `bash tests/run_capi.sh` | ✅（含被删指令/旧字段的负向断言） |
+| 纯 C 接口 | `bash tests/run_capi.sh` | ✅（含被删除指令/旧字段的负向断言） |
 | 对外 API 示例 | `bash tests/run_api.sh` | ✅ |
-| Node 交叉验证 | `bash tests/run_crosscheck.sh` | 23 收 / 9 发 ✅ |
-| 连接健壮性 | `bash tests/run_reconnect.sh` | 重连后收齐 23 种下行 ✅ |
+| Node 交叉验证 | `bash tests/run_crosscheck.sh` | 23 条接收 / 9 条发送 ✅ |
+| 连接健壮性 | `bash tests/run_reconnect.sh` | 重连后接收齐全 23 种下行 ✅ |
 | GUI 离屏 | `bash tests/run_gui.sh` | ✅ |
 | 图传链路 | `bash tests/run_video.sh`、`run_video_capi.sh` | ✅ |
 | 雷达线格式 | `bash tests/run_radar_wire.sh` | ✅ nested（默认）/ flat（官方字面）各自逐字段一致 |
 | 图传压力（18 种编码/故障注入） | `bash tests/stress_video.sh` | ✅ 全部通过 |
-| 端到端（协议 + 图传同时跑） | `bash tests/run_integrated.sh` | 协议 32 条 + 图传 271 帧 ✅ |
+| 端到端（协议 + 图传同时运行） | `bash tests/run_integrated.sh` | 协议 32 条 + 图传 271 帧 ✅ |
 
-一键全跑：`bash tests/run_all.sh`（11 项，含 radar wire 测试）。
+一键全部运行：`bash tests/run_all.sh`（11 项，含 radar wire 测试）。
 
 ## 6. 边界与未做
 

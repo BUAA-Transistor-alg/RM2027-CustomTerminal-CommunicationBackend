@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 端到端一体验证：MQTT 协议（32 条）与 UDP 图传**同时**跑，互不干扰
+# 端到端一体验证：MQTT 协议（32 条）与 UDP 图传**同时**运行，互不干扰
 #
 #   1) 协议：C++ 服务器(自带 broker) ↔ C++ 客户端，32 条逐字段比对
 #   2) 图传：C++ 发送端(合成图案 -> HEVC -> UDP) ↔ C++ 接收端(重组 -> 解码 -> 画面)
@@ -39,12 +39,12 @@ cleanup() {
 trap cleanup EXIT
 sleep 0.8
 
-# ---- 图传发送端（与协议同时跑）----
+# ---- 图传发送端（与协议同时运行）----
 "$ROOT/build/rm_video_tx" --port "$VIDEO_PORT" --width 1280 --height 720 --fps 30 \
     --bitrate 4000 --gop 30 --duration 9 > "$OUT/integrated_video_tx.out" 2>/dev/null &
 VIDEO_TX_PID=$!
 
-# ---- 协议客户端（跑 10 秒，期间图传一直在流）----
+# ---- 协议客户端（运行 10 秒，期间图传一直在流）----
 "$ROOT/build/rm_client" \
     --host "$HOST" --port "$PORT" --client-id 3 \
     --subscribe all \

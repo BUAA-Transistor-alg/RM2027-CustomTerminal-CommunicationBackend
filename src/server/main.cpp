@@ -178,7 +178,7 @@ int main(int argc, char **argv) {
         RM_INFO("main", "已加载场景: " << scenario.size() << " 步，间隔 " << intervalMs
                                        << "ms，重复 " << (repeat == 0 ? -1 : repeat) << " 次");
 
-        // 等到足够多的客户端订阅上来（否则最早几帧会丢）
+        // 等到足够多的客户端订阅上来（否则最早几帧会丢失）
         if (startAfter > 0) {
             const int64_t deadline = nowMs() + waitClientsMs;
             while (server.subscribedClientCount() < static_cast<std::size_t>(startAfter) &&
@@ -207,7 +207,7 @@ int main(int argc, char **argv) {
             ++rounds;
         }
     } else {
-        // 没给场景就只是挂着当 broker 用
+        // 没给场景就仅作为 broker 运行
         const int64_t deadline = nowMs() + (lingerMs > 0 ? lingerMs : 0);
         while (g_running() && (lingerMs == 0 || nowMs() < deadline)) {
             if (lingerMs == 0) {
@@ -217,7 +217,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    // ---- 驻留，让客户端收完最后几条 ----
+    // ---- 驻留，让客户端接收完最后几条 ----
     if (lingerMs > 0) {
         const int64_t deadline = nowMs() + lingerMs;
         while (g_running() && nowMs() < deadline) {

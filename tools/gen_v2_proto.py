@@ -26,7 +26,7 @@ UPSTREAM = [
     "RuneActivateCommand", "DartCommand", "SentryCtrlCommand",
 ]
 
-# 官方文档里紧跟 RadarInfoToClient 的辅助结构，不是独立 topic
+# 官方文档里紧跟 RadarInfoToClient 的辅助结构，不作为独立 topic
 AUX = {"RadarSingleRobotInfo"}
 
 FIELD_RE = re.compile(

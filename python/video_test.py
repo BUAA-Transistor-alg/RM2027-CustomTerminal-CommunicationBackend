@@ -81,7 +81,7 @@ def main():
 
     st = rx.stats
     print("     接收端统计:", st)
-    check(st.frames_complete > 20, "收帧统计正常")
+    check(st.frames_complete > 20, "接收帧统计正常")
     check(st.frames_decoded > 20, "解码统计正常")
     check(st.codec == "h265", "自动模式探测到 h265")
     check(st.codec_mode == "auto", "统计里 codecMode = auto")

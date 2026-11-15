@@ -1,6 +1,6 @@
 """把 C++ 工作线程里的回调安全地转到 Qt 主线程。
 
-ctypes 回调发生在 C++ 的线程里，直接操作 Qt 控件会崩。这里统一用信号转发。
+ctypes 回调发生在 C++ 的线程里，直接操作 Qt 控件会崩溃。这里统一用信号转发。
 """
 from __future__ import annotations
 
@@ -19,6 +19,6 @@ class QtBridge(QObject):
         super().__init__(parent)
 
     def attach(self, obj) -> None:
-        """给 rm2027c.Client / Server 挂上转发回调"""
+        """给 rm2027c.Client / Server 注册转发回调"""
         obj.on_message(lambda name, data, cid: self.messageReceived.emit(name, data, cid))
         obj.on_event(lambda ev, detail: self.eventReceived.emit(ev, detail))

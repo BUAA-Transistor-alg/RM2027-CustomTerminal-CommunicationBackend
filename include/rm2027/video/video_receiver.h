@@ -29,7 +29,7 @@ struct VideoReceiverOptions {
     std::string bindHost{"0.0.0.0"};
     uint16_t port{3334};                 // 官方：客户端监听 3334
     std::size_t maxFrameBytes{8u << 20}; // 单帧上限（防呆）
-    int frameTimeoutMs{300};             // 组帧超时：超过则判为不完整并丢弃
+    int frameTimeoutMs{300};             // 组帧超时：超过则判定为不完整并丢弃
     std::size_t maxPendingFrames{48};    // 同时在组的帧数上限
     std::size_t auQueueDepth{64};        // 待解码 AU 队列深度（B 帧时解码器有延迟，要留够）
     // 解码格式：默认自动探测；也可手动固定为某一种
@@ -38,7 +38,7 @@ struct VideoReceiverOptions {
 
 class VideoReceiver {
 public:
-    // 可选：每解出一帧同步回调（一帧不漏；预览建议用 getLatestFrame 拉取）
+    // 可选：每解码出一帧同步回调（一帧不漏；预览建议用 getLatestFrame 拉取）
     using FrameHandler = std::function<void(const VideoFrame &)>;
 
     explicit VideoReceiver(VideoReceiverOptions opt);
@@ -122,7 +122,7 @@ private:
     std::atomic<uint64_t> framesDecoded_{0}, decodeErrors_{0}, droppedBySlot_{0};
     std::atomic<uint64_t> keyframeWaits_{0}, decoderResets_{0};
     std::atomic<uint64_t> frameGaps_{0};
-    // 帧号连续性 + 关键帧门控：参考链一断，绝不能拿过期参考硬解（会出错误画面）
+    // 帧号连续性 + 关键帧门控：参考链一断，绝不能拿过期参考强制解码（会出错误画面）
     bool lastAuSeen_{false};
     uint16_t lastAuFrame_{0};
     bool needKeyframe_{true};

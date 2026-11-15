@@ -13,7 +13,7 @@
     cli.start()
     cli.send("DartCommand", {"target_id": 1, "open": True, "launch_confirm": True})
 
-注意：回调是在 C++ 的工作线程里调用的（不是 Python 主线程）。
+注意：回调在 C++ 的工作线程里调用（不在 Python 主线程）。
      做 Qt 界面时请用信号把它转到主线程，见 gui/ 下的实现。
 """
 
@@ -307,7 +307,7 @@ def _camel(name: str) -> str:
 
 
 def _convert_keys(value, fields: List[dict], to_wire: bool):
-    """to_wire=True: snake->camel（发出去）；False: camel->snake（收进来）"""
+    """to_wire=True: snake->camel（发送出去）；False: camel->snake（接收进来）"""
     if isinstance(value, list):
         return [_convert_keys(v, fields, to_wire) for v in value]
     if not isinstance(value, dict):
@@ -484,7 +484,7 @@ class Server(_Base):
         return int(_lib.rm_server_subscribed_client_count(self._handle))
 
     def topic_subscriber_count(self, topic: str) -> int:
-        """订阅了指定 topic 的客户端数（判断「要发的这个 topic」是否就绪）。"""
+        """订阅了指定 topic 的客户端数（判断「要发送的这个 topic」是否就绪）。"""
         return int(_lib.rm_server_topic_subscriber_count(self._handle, topic.encode()))
 
     @property
@@ -636,7 +636,7 @@ class VideoSender:
         tx.send_frame(frame)      # frame 是 (h, w, 3) uint8 BGR
         tx.flush(); tx.stop()
 
-    编码参数（也可用 config() 改，需先 stop）：
+    编码参数（也可用 config() 修改，需先 stop）：
         width height fps bitrate_kbps gop_size bframes slices aud repeat_headers
         pix_fmt preset tune intra_refresh
     故障注入（fault()，用来压测对端）：
@@ -790,11 +790,11 @@ class VideoReceiver:
     def running(self) -> bool:
         return bool(_lib.rm_video_receiver_is_running(self._h))
 
-    # -- 收帧 --
+    # -- 接收帧 --
     def get_frame(self) -> Optional[VideoFrame]:
         """取最新解码帧。返回 None 表示自上次调用以来没有新帧。
 
-        注意：这是「最新帧槽位」语义 —— UI 跟不上时会自动丢旧帧，
+        注意：这是「最新帧槽位」语义 —— UI 跟不上时会自动丢弃旧帧，
         不会阻塞网络和解码线程。这正是实时预览想要的。
         """
         w = c_int(0); h = c_int(0); stride = c_int(0)
@@ -817,7 +817,7 @@ class VideoReceiver:
         return VideoFrame(image=img, frame_number=int(fno.value), keyframe=bool(key.value))
 
     def set_frame_handler(self, fn: Optional[Callable[[VideoFrame], None]]) -> None:
-        """注册「每解出一帧就回调」的处理器（一帧不漏）。
+        """注册「每解码出一帧就回调」的处理器（一帧不漏）。
 
         预览建议用 get_frame() 主动拉取；需要逐帧处理（如录像）时用这个。
         注意：回调在 C++ 的解码线程里执行。

@@ -49,7 +49,7 @@ if(Protobuf_VERSION VERSION_LESS 3.15)
     message(FATAL_ERROR
         "protobuf ${Protobuf_VERSION} 过旧：官方 V1.0.0 协议使用 proto3 optional，需要 >= 3.15。\n"
         "  解决办法（任选其一）：\n"
-        "    1) 跑一次脚本，自动下载+校验+编译安装到 third_party/（推荐，约 2 分钟）：\n"
+        "    1) 运行一次脚本，自动下载+校验+编译安装到 third_party/（推荐，约 2 分钟）：\n"
         "         third_party/fetch_protobuf.sh\n"
         "    2) sudo apt install -y protobuf-compiler libprotobuf-dev（需发行版源 >= 3.15）\n"
         "  依赖清单与许可证见 third_party/README.md")

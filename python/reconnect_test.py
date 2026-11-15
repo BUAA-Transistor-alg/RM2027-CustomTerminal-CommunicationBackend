@@ -3,7 +3,7 @@
 
 覆盖两个曾经的问题：
   1. 服务端没起时客户端 start() 直接失败（应改为一直后台重试）
-  2. 断线重连后部分 topic 漏订，导致「服务端还在发、客户端收不到某些消息」
+  2. 断线重连后部分 topic 漏订，导致「服务端还在发送、客户端接收不到某些消息」
 """
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ def main():
     try:
         cli.start()
     except RuntimeError as e:
-        check(False, "服务端没起时 start() 不应抛错：%s" % e)
+        check(False, "服务端没起时 start() 不应抛出错误：%s" % e)
         cli.close()
         return 1
     check(True, "服务端未启动时 start() 返回正常")
@@ -76,7 +76,7 @@ def main():
             time.sleep(0.05)
         return False
 
-    check(wait_all(6), "首次连接后收齐 23 种下行指令（%d 种）" % len(topics))
+    check(wait_all(6), "首次连接后接收齐全 23 种下行指令（%d 种）" % len(topics))
 
     # ---- 3. 断线重连 + 重订阅完整性 ----
     print("-- 3/3 断线重连后重新订阅全部 topic --")
@@ -89,7 +89,7 @@ def main():
     while time.time() - t0 < 15 and not cli.connected:
         time.sleep(0.05)
     check(cli.connected, "重连耗时 %.1fs" % (time.time() - t0))
-    check(wait_all(8), "重连后收齐 23 种下行指令（%d 种）" % len(topics))
+    check(wait_all(8), "重连后接收齐全 23 种下行指令（%d 种）" % len(topics))
 
     srv.kill()
     cli.close()

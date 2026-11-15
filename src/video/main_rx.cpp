@@ -1,4 +1,4 @@
-// RM2027 图传接收工具 —— VideoReceiver：UDP 组帧 -> HEVC 解码 -> 统计/落盘
+// RM2027 图传接收工具 —— VideoReceiver：UDP 组帧 -> HEVC 解码 -> 统计/保存
 #include <chrono>
 #include <csignal>
 #include <cstdio>

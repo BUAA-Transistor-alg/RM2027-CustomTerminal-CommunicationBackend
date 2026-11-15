@@ -46,9 +46,9 @@ public:
     void onClientPublish(PublishHandler h) { onPublish_ = std::move(h); }
 
     std::size_t clientCount() const;
-    // 已经至少有一条订阅的客户端数（用于判断订阅是否就绪，避免发早了丢消息）
+    // 已经至少有一条订阅的客户端数（用于判断订阅是否就绪，避免发送过早导致消息丢失）
     std::size_t subscribedClientCount() const;
-    // 订阅了指定 topic 的客户端数（用于判断「要发的这个 topic」是否就绪）
+    // 订阅了指定 topic 的客户端数（用于判断「要发送的这个 topic」是否就绪）
     std::size_t topicSubscriberCount(const std::string &topic) const;
     std::vector<std::string> clientIds() const;
 

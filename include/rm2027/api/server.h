@@ -86,7 +86,7 @@ public:
     std::size_t clientCount() const;
     // 已订阅（至少一条）的客户端数
     std::size_t subscribedClientCount() const;
-    // 订阅了指定 topic 的客户端数（判断「要发的这个 topic」是否就绪）
+    // 订阅了指定 topic 的客户端数（判断「要发送的这个 topic」是否就绪）
     std::size_t topicSubscriberCount(const std::string &topic) const;
     std::size_t receivedCount() const;
     std::size_t sentCount() const;

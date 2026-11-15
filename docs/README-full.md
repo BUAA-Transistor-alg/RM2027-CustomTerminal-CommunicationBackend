@@ -65,7 +65,7 @@ RM2027-CustomTerminal-CommunicationBackend/
     ├── stress_video.sh             # 图传压力矩阵
     ├── run_radar_wire.sh           # 雷达线格式（nested / flat）
     ├── run_integrated.sh           # 端到端一体（协议 + 图传）
-    ├── run_all.sh                  # 一键全跑
+    ├── run_all.sh                  # 一键全部运行
     ├── scenarios/                  # 生成的测试场景 JSON
     ├── media/                      # 测试用 HEVC 裸流
     └── node/                       # 用 mqtt.js 做的第三方 MQTT 兼容性探针
@@ -190,7 +190,7 @@ rm2027::Server server(opt);
 server.on<rm2027::DartCommand>([](std::unique_ptr<rm2027::DartCommand> cmd) {
     printf("target_id=%u confirm=%d\n", cmd->target_id, cmd->launch_confirm);
 });
-// 需要知道是哪个机器人发的就用 onFrom / onAnyFrom（附带 clientId）
+// 需要知道是哪个机器人发送的就用 onFrom / onAnyFrom（附带 clientId）
 server.onAnyFrom([](std::unique_ptr<rm2027::Message> m, const std::string &clientId) {
     printf("%s from %s\n", m->name(), clientId.c_str());
 });
@@ -201,7 +201,7 @@ server.start();
 auto st = std::make_unique<rm2027::GameStatus>();
 st->current_stage = 4;
 st->red_score = 100;
-st->game_result = 255;              // 官方约定：非结算阶段发 255
+st->game_result = 255;              // 官方约定：非结算阶段发送 255
 server.send(std::move(st));
 
 server.runUntilStopped();
@@ -216,7 +216,7 @@ server.runUntilStopped();
 | 按类型绑定回调 | `on<T>([](unique_ptr<T>){})` | 同 |
 | 按名字绑定回调 | `on(name, [](unique_ptr<Message>){})` | 同 |
 | 附带发送方 clientId | — | `onFrom` / `onAnyFrom` |
-| 兜底回调 | `onAny` | `onAny` / `onAnyFrom` |
+| 通用回调 | `onAny` | `onAny` / `onAnyFrom` |
 | 上下线通知 | — | `onClientConnected` / `onClientDisconnected` |
 | 状态 | `isConnected()`、`receivedCount()`、`sentCount()` | `isRunning()`、`clientCount()`、`subscribedClientCount()`、收发计数 |
 | 序列化（调试用） | `rm2027::toJson/toBinary/fromJson/fromBinary/createMessage` | 同 |
@@ -226,9 +226,9 @@ server.runUntilStopped();
 > 发送前会按官方 §2.2 校验长度 / 值域（`CustomControl` ≤60B、`CustomByteBlock` ≤300B、`MapClick*` 的 `robot_id` 固定 7B、
 > `GlobalUnitStatus.robot_health` / 雷达非空时固定 8 个、`keyboard_value` ≤0xFFFF）；不符合时发送被拒绝并给出原因，接收端则不校验、尽量解析。
 
-> **注意（一个容易踩的坑）**：`--start-after` 判断的是「客户端已连接」，
-> 而 TCP 连上 ≠ 订阅完成。服务器侧若要立刻发数据，请等 `subscribedClientCount() > 0`，
-> 否则第一条消息会丢。CLI 工具 `rm_server` 已内置该等待。
+> **注意（一个容易出错的地方）**：`--start-after` 判断的是「客户端已连接」，
+> 而 TCP 连上 ≠ 订阅完成。服务器侧若要立刻发送数据，请等 `subscribedClientCount() > 0`，
+> 否则第一条消息会丢失。CLI 工具 `rm_server` 已内置该等待。
 
 
 ---
@@ -236,11 +236,18 @@ server.runUntilStopped();
 ## 3.4 图传（UDP 3334）
 
 **两端都只跟「图片」打交道**：编码、解码、组帧、分片全在 C++ 内部完成，
-上层只负责「喂图片」和「取图片 + 看统计」。
+上层只负责「喂图片」和「获取图片 + 查看统计」。
 
-```
-发送：BGR 图像 ->[C++ 编码 HEVC]-> 分片 -> UDP 3334
-接收：UDP 3334 -> 重组 -> [C++ 解码 HEVC] -> BGR 图像（最新帧槽位）+ 统计
+```mermaid
+flowchart LR
+  subgraph send[发送]
+    direction LR
+    S1[BGR 图像] --> S2[C++ 编码 HEVC] --> S3[分片] --> S4[UDP 3334]
+  end
+  subgraph recv[接收]
+    direction LR
+    R1[UDP 3334] --> R2[重组] --> R3[C++ 解码 HEVC] --> R4[BGR 图像（最新帧槽位）+ 统计]
+  end
 ```
 
 图像统一是 **BGR24 紧凑排列**（与 OpenCV / Qt 一致），所以 Python 侧
@@ -289,7 +296,7 @@ if (rx.getLatestFrame(&since, &bgr, &info)) {
 }
 ```
 
-> **最新帧槽位语义**：接收端只保留最新一帧。UI 跟不上时自动丢旧帧，
+> **最新帧槽位语义**：接收端只保留最新一帧。UI 跟不上时自动丢弃旧帧，
 > **绝不阻塞网络线程和解码线程** —— 这正是实时预览想要的。
 > 需要「一帧不漏」时用 `setFrameHandler()` 注册回调。
 
@@ -312,11 +319,11 @@ rx.setCodecMode(rm2027::VideoCodecMode::H264);   // 固定
 
 ### 丢包后的行为（按真实数字图传的做法）
 
-* **照常解码、照常显示，绝不冻结画面**。做法对齐 mpv/FFmpeg 的
+* **照常解码、照常显示，绝不冻结画面**。做法与 mpv/FFmpeg 相同，使用
   `AV_CODEC_FLAG_OUTPUT_CORRUPT` + `AV_CODEC_FLAG2_SHOW_ALL`：
   解码器尽可能输出任何东西，包括损坏帧。
 * 操作手靠画面里的**运动趋势**判断往哪走，冻结画面等于让他失明。
-* 偶发丢包时 FFmpeg 会用之前的参考帧扛住，画面只是局部有损。
+* 偶发丢包时 FFmpeg 会使用之前的参考帧，画面只是局部有损。
 * 持续高丢包会让画面逐帧衰减到灰（预测编码的固有性质，解码端无解）——
   这时要靠**降码率/缩短 GOP/intra-refresh**，或链路层 FEC。
   实测数据见 [`docs/官方码流封帧调研.md`](官方码流封帧调研.md)。
@@ -326,8 +333,8 @@ rx.setCodecMode(rm2027::VideoCodecMode::H264);   // 固定
 发送端带一组故障注入和编码配置轮换，专门用来压测接收端：
 
 ```cpp
-opt.dropEveryNthPacket = 7;        // 每 7 个包丢 1 个
-opt.duplicateEveryNthPacket = 11;  // 每 11 个包重复发一次
+opt.dropEveryNthPacket = 7;        // 每 7 个包丢弃 1 个
+opt.duplicateEveryNthPacket = 11;  // 每 11 个包重复发送一次
 opt.shuffleFragments = true;       // 打乱帧内分片顺序
 opt.corruptFrameTotal = true;      // 故意写错「当前帧总字节数」
 opt.rotateEncoderEveryNFrames = 60;// 每 60 帧轮换一套编码配置
@@ -456,7 +463,7 @@ tx.start()
 tx.send_frame(frame_bgr)        # (h, w, 3) uint8
 tx.flush(); tx.stop(); tx.close()
 
-# 接收端：取 numpy BGR 图像 + 统计
+# 接收端：获取 numpy BGR 图像 + 统计
 rx = rm.VideoReceiver(port=3334, codec_mode=rm.CODEC_AUTO)
 rx.start()
 while True:
@@ -478,7 +485,7 @@ print(rx.stats)                 # h265/auto 1920x1080  收 900 帧(完整) 解 9
 
 ![客户端面板](images/gui_client_live.png)
 
-深色主题下同样正常（面板底色跟随系统调色板，不是写死的浅色）：
+深色主题下同样正常（面板底色跟随系统调色板）：
 
 ![深色主题](images/gui_server_dark.png)
 
@@ -492,7 +499,7 @@ print(rx.stats)                 # h265/auto 1920x1080  收 900 帧(完整) 解 9
 > ```
 
 ```bash
-# 服务器（界面里可直接改监听地址/端口）
+# 服务器（界面里可直接修改监听地址/端口）
 python3 python/run_server.py --host 127.0.0.1 --port 3333
 
 # 客户端（clientID = 机器人 ID）
@@ -509,7 +516,7 @@ python3 python/run_server.py --light       # 强制浅色
 | :-- | :-- |
 | **每条指令独立开关** | 左侧 23（服务器）/ 9（客户端）个面板，各有一个「启用」勾选框 |
 | **发送频率** | 数值框，**默认值取自官方文档表 2-1**，旁边显示「官方 5Hz」做对照 |
-| **触发式发送** | 频率设为 **0** 时，「启用」自动禁用、按钮变为「**触发发送**」，点一次发一次 |
+| **触发式发送** | 频率设为 **0** 时，「启用」自动禁用、按钮变为「**触发发送**」，点一次发送一次 |
 | **内容编辑** | 按官方字段表自动生成表单；bool 用复选框，bytes 支持文本或 `hex:00 11 22`，repeated 用空格分隔，嵌套消息填 JSON |
 | **JSON 模式** | 每个面板右上角 `{ }` 按钮，可直接编辑整条指令的 JSON |
 | **接收实时显示** | 右侧表格显示每条指令的「次数 + 最新内容」，下方是滚动日志；字段名与发送时一致 |
@@ -517,30 +524,36 @@ python3 python/run_server.py --light       # 强制浅色
 | **状态栏** | 收发计数、连接状态、服务器侧显示「客户端 N（已订阅 M）」 |
 | **自动发送调度** | 10ms 定时器按各面板自己的频率触发，互不影响 |
 | **主题跟随系统** | 面板底色、次要文字、状态色全部取自 `QPalette`；系统切换明暗主题时自动重建样式，也可用 `--dark` / `--light` 强制 |
-| **图传面板** | 「图传」标签页：服务器侧读视频文件喂帧，客户端侧实时预览；端口/文件运行中禁用、停止后可改；解码格式可选自动探测或手动固定；**收发两侧都有实时预览且可随时开关** |
+| **图传面板** | 「图传」标签页：服务器侧读视频文件喂帧，客户端侧实时预览；端口/文件运行中禁用、停止后可修改；解码格式可选自动探测或手动固定；**收发两侧都有实时预览且可随时开关** |
 
 ### 6.1 图传预览的显示流水线（「尽量显示」）
 
-预览**不是**用定时器按固定频率去采样取帧 —— 采样周期与帧率一旦错拍就会
+预览由专门的**显示线程**持续取帧：定时器按固定频率采样取帧时，采样周期与帧率一旦错拍就会
 **系统性丢帧**（比如 16ms 定时器 + 60fps 流，会周期性地漏掉或重复帧）。
-这里改成由专门的**显示线程**持续取帧：
 
+```mermaid
+flowchart LR
+  subgraph worker[工作线程]
+    direction LR
+    A[取一帧] --> B[整数降采样] --> C[转 QImage]
+  end
+  subgraph gui[GUI 线程]
+    direction LR
+    D[QPixmap.fromImage + setPixmap]
+  end
+  C -->|跨线程槽| D
 ```
-工作线程                                        GUI 线程
-────────                                       ────────
-取一帧 → 整数降采样 → 转 QImage  ──槽──>  QPixmap.fromImage + setPixmap
-（只有上一帧已被取走时才转换，不白干活）
-```
+（只有上一帧已被取走时才转换，避免无效转换）
 
 几个关键取舍：
 
 | 取舍 | 原因 |
 | :-- | :-- |
-| 转换放显示线程，不放 GUI 线程 | 1080p 每帧 6MB 级转换会拖住界面；QImage 可以在非 GUI 线程创建（QPixmap 不行） |
-| 只保留最新一帧，不排队 | 排队会让画面越来越滞后（延迟累积）；宁可丢旧帧也要显示最新画面 |
+| 转换放显示线程，不放 GUI 线程 | 1080p 每帧 6MB 级转换会阻塞界面；QImage 可以在非 GUI 线程创建（QPixmap 不行） |
+| 只保留最新一帧，不排队 | 排队会让画面越来越滞后（延迟累积）；宁可丢弃旧帧也要显示最新画面 |
 | `wants()` 门控 | GUI 还没画完上一帧就跳过转换，避免把 CPU 花在马上被覆盖的帧上 |
-| 通知合并 | 显示线程只在「上一帧已被取走」时发一次通知，不会刷爆 Qt 事件队列 |
-| 整数抽取降采样 | `img[::k, ::k]` 几乎零成本；插值缩放在 1080p 下反而是可观开销 |
+| 通知合并 | 显示线程只在「上一帧已被取走」时发送一次通知，不会使 Qt 事件队列积压 |
+| 整数抽取降采样 | `img[::k, ::k]` 几乎零成本；插值缩放在 1080p 下开销可观 |
 
 实测（离屏渲染，4 秒）：
 
@@ -550,7 +563,7 @@ python3 python/run_server.py --light       # 强制浅色
 | 1080p60 接收预览 | 240 | 240 | **240** | **100%** |
 | 720p60 发送预览 | 299 | — | **299** | **100%**（改造前硬限 15fps，只有 25%） |
 
-验证脚本：`tests/run_gui.sh`（用 Qt offscreen 无显示器跑真实窗口，检查频率默认值、
+验证脚本：`tests/run_gui.sh`（用 Qt offscreen 无显示器运行真实窗口，检查频率默认值、
 触发式语义、按频率自动发送、接收内容一致性等）。
 
 
@@ -569,7 +582,7 @@ python3 python/run_server.py --light       # 强制浅色
                   --scenario tests/scenarios/all_down.json
 ```
 
-> 图传不在这个 CLI 里发 —— 发送端要「喂图片」，由 Python/GUI 侧驱动
+> 图传不在这个 CLI 里发送 —— 发送端要「喂图片」，由 Python/GUI 侧驱动
 > （见下面的图传工具与第 6 节）。
 
 ### 客户端
@@ -585,7 +598,7 @@ python3 python/run_server.py --light       # 强制浅色
 
 ### 图传工具（合成图案，不依赖 Python）
 
-发送端生成合成图案喂给编码器，接收端解码后落盘 PPM，可直接看画面：
+发送端生成合成图案喂给编码器，接收端解码后保存为 PPM，可直接查看画面：
 
 ```bash
 # 接收端：监听 3334，解码后每 20 帧存一张 PPM
@@ -594,7 +607,7 @@ python3 python/run_server.py --light       # 强制浅色
 # 发送端：1280x720@30，编码后经 UDP 发出
 ./build/rm_video_tx --port 3334 --width 1280 --height 720 --fps 30 --duration 6
 
-# 落盘的是 PPM，可直接看图；也可转成 png
+# 保存的是 PPM，可直接查看；也可转成 png
 ls /tmp/rx_*.ppm
 ```
 
@@ -618,13 +631,13 @@ bash tests/run_all.sh
 ## 8. 验证方法（为什么结论可信）
 
 核心思路：**用「每条消息、每个字段都取值唯一」的确定性场景驱动，然后逐字段比对**。
-字段一丢、字段号一错、类型一混，数值立刻对不上，不会像随机数据那样被掩盖。
+字段一旦丢失、字段号一旦出错、类型一旦混淆，数值立刻对不上，不会像随机数据那样被掩盖。
 
 1. `tests/gen_scenario.py` 从 `docs/spec-v1.0.0-fields.json`（官方 2027 PDF 提取的字段表）生成场景，
    取值规则：`整数 = 字段号*1000 + 盐`、`浮点 = 字段号*1.5 + 盐`、`bool=True`、`bytes=base64([字段号,0xAB])`、
    `repeated=[v,v]`。不同消息的盐不同，所以 32 条消息、160+ 字段里任何一个错位都能被定位。
 2. 服务器/客户端把每条收发的消息以一行**规范化 JSON**（camelCase、**含默认值**、bytes 用 base64）
-   打到 stdout。含默认值很关键 —— 字段缺失会表现为 0，而不是「不输出所以看不出来」。
+   打到 stdout。含默认值很关键 —— 字段缺失会表现为 0；不输出默认值，缺失就看不出来。
 3. `tests/check_records.py` 按字段类型比对：整数/布尔/字符串精确相等，浮点带 1e-5 相对容差，
    并且会报告「实际多出的字段」。
 
@@ -635,9 +648,9 @@ bash tests/run_all.sh
 | **官方一致性** 逐字段机器字面比对 | 官方 V1.0.0 PDF §2.2 全部 32 条协议消息 + 1 条辅助 message | ✅ **31/32 字面一致 + 1 条已知偏离**（`RadarInfoToClient` 雷达双模式，见根目录 README；`tools/diff_protocol_versions.py`） |
 | **对外 API** 只用公开头文件的示例 | 6 条收发 + 字段值 | ✅ 全部命中（`tests/run_api.sh`） |
 | **纯 C 接口** librm2027c.so + ctypes | 32 条元数据 + 双向收发 + 嵌套/bytes | ✅ 全部命中（`tests/run_capi.sh`） |
-| **PyQt5 面板** 离屏跑真实窗口 | 频率默认值/触发式/自动发送/接收显示/深色浅色主题/图传面板（收发+实时预览+格式切换） | ✅ 全部命中（`tests/run_gui.sh`） |
-| **图传预览显示** | 显示帧数应等于解码帧数（不是定时器采样） | ✅ 720p60 / 1080p60 均 **100%** |
-| **图传画面** | 解码帧与发送端合成图案**逐像素**比对（不是只看"有没有收到"） | ✅ 误差 ≈1.7（纯压缩噪声） |
+| **PyQt5 面板** 离屏运行真实窗口 | 频率默认值/触发式/自动发送/接收显示/深色浅色主题/图传面板（收发+实时预览+格式切换） | ✅ 全部命中（`tests/run_gui.sh`） |
+| **图传预览显示** | 显示帧数应等于解码帧数（由显示线程逐帧取帧） | ✅ 720p60 / 1080p60 均 **100%** |
+| **图传画面** | 解码帧与发送端合成图案**逐像素**比对（比对画面内容） | ✅ 误差 ≈1.7（纯压缩噪声） |
 | **图传接口** | 纯 C 接口 + Python ctypes/numpy 进出 | ✅ `tests/run_video_capi.sh` |
 | **图传压力** | 18 种编码方式 / 网络故障注入 | ✅ `tests/stress_video.sh` |
 | **协议** C++ 服务器 ↔ C++ 客户端 | 23 下行 + 9 上行 = 32 条 | ✅ 逐字段一致 |
@@ -645,34 +658,34 @@ bash tests/run_all.sh
 | **UDP 图传** tx ↔ rx（1080p60） | 120 帧 / 626 包 | ✅ 重组结果与原始码流**逐字节一致**，ffprobe+ffmpeg 校验通过，0 丢包 |
 | **雷达线格式** | nested（默认）/ flat（官方字面）两模式往返 | ✅ 各自逐字段一致（`tests/run_radar_wire.sh`） |
 | **UDP 包头** | 固定大端（官方 2027 §2） | ✅ 与官方一致（`tests/run_video.sh` 校验） |
-| **端到端一体** 协议 + 图传同时跑 | 32 条 + 图传 | ✅ 全部通过 |
+| **端到端一体** 协议 + 图传同时运行 | 32 条 + 图传 | ✅ 全部通过 |
 
 > 端到端测试里 ffprobe 可能打印 `PPS id out of range` / `Could not find ref with POC ...`：
 > 这是**客户端中途加入已在循环播放的码流**导致的（开头没有 VPS/SPS/PPS 和 IDR 帧），
-> 属于正常的随机接入问题，不是重组缺陷。判据用的是「重组结果是原始码流循环流的连续片段」
+> 属于正常的随机接入问题。判据用的是「重组结果是原始码流循环流的连续片段」
 > 这一更严格的逐字节条件；若在流开始前先启动接收端，则重组结果与原始文件完全一致
 > （见 `run_video.sh`：`cmp` 逐字节相同）。
 
 ---
 
-## 9. 实现要点与踩过的坑
+## 9. 实现要点与遇到过的问题
 
 1. **Paho 回调里绝不能阻塞。** 最初在 `connected()` 里调用 `subscribe()->wait_for()`，
-   占住了 Paho 的回调线程 → 心跳停发 → broker 判定 keepalive 超时断开，订阅每个都卡满 5 秒超时。
-   现在 `connected()` 只置标志，订阅放到独立线程做，`run()` 等 SUBACK 到手再发上行。
+   占住了 Paho 的回调线程 → 心跳停止发送 → broker 判定 keepalive 超时断开，每个订阅都触发了 5 秒超时。
+   现在 `connected()` 只置标志，订阅放到独立线程做，`run()` 等 SUBACK 到手再发送上行。
 2. **protobuf 生成代码必须用 OBJECT 库。** 放进静态库且无人引用时，链接器会丢弃 `.pb.o`，
    静态初始化不执行 → `generated_pool` 查不到描述符。CMake 里 `rm2027_proto` 是 OBJECT 库。
 3. **protobufjs 只认 camelCase。** Node 侧测试脚本若传 snake_case，`fromObject` 会**静默忽略**，
    编码出全是默认值的空消息（极端情况下甚至编码成 0 字节）。测试脚本统一做了转换。
 4. **UDP「帧」按 Annex-B 访问单元切分。** 发送端扫描 `00 00 01` / `00 00 00 01` 起始码，
    按「VCL NAL 开启新 AU、AUD 边界、参数集跟随」分组，保证每帧是完整的一帧，
-   而不是像按时间切片那样切断 NAL。接收端**不假设分片大小**，按 `fragmentIndex` 排序后拼装，
+   不会按时间切片切断 NAL。接收端**不假设分片大小**，按 `fragmentIndex` 排序后拼装，
    因此对任意 MTU 的对端都兼容。
 5. **`send(msg->name(), std::move(msg))` 是未定义行为。** C++ 不规定实参求值顺序，
    若 `std::move` 先求值，`msg` 已被置空，随后 `msg->name()` 就是空指针解引用（实测段错误）。
    必须先取名再 move。`Client::send` / `Server::send` 已按此写法。
 6. **`--start-after` 不能只判断「已连接」。** TCP 连上 ≠ 订阅完成，服务器若在客户端
-   还没 SUBSCRIBE 完就发布，第一条消息必然丢。服务器改为等 `subscribedClientCount() > 0`。
+   还没 SUBSCRIBE 完就发布，第一条消息必然丢失。服务器改为等 `subscribedClientCount() > 0`。
    这个问题是靠与 Node 客户端的交叉验证才暴露出来的（C++ 客户端因为 `start()` 内部等订阅完成而掩盖了它）。
 7. **C 接口的字符串生命周期。** 回调里的 `name/json/client_id` 只在回调期间有效
    （内部是临时 `std::string` 的 `c_str()`），要留存必须自己拷贝；
@@ -683,9 +696,9 @@ bash tests/run_all.sh
    `tools/build_protobuf.sh` 已加 `-DCMAKE_POSITION_INDEPENDENT_CODE=ON`。
 9. **protobuf 的 JSON 字段名是 camelCase，官方文档是 snake_case。** Python 层显式做了
    双向转换，对外统一成官方 snake_case；发送时两种写法都接受。
-10. **Qt 自定义样式里不要写死颜色。** 最初给面板写了 `background: #fafafa`，
+10. **Qt 自定义样式里不要固定颜色。** 最初给面板写了 `background: #fafafa`，
     但文字颜色跟着系统调色板走 —— 深色主题下文字变白，于是**白底白字，指令名完全看不见**。
-    正确做法是背景也从 `QPalette` 取（`AlternateBase`，与 `Window` 太接近时退回 `Base`），
+    正确做法是背景也从 `QPalette` 获取（`AlternateBase`，与 `Window` 太接近时退回 `Base`），
     这样明暗两种主题都成立。已加自动化回归：用 WCAG 对比度公式断言
     「面板底 / 指令名」对比度 ≥ 4.5:1（实测浅色 19.6:1、深色 15.7:1）。
 11. **图传线程生命周期。** `stop()` 只置原子标志、不在另一个线程里 `close()` 正在使用的 fd
@@ -705,7 +718,7 @@ bash tests/run_all.sh
   本项目用 `tools/build_protobuf.sh` 构建的 3.21.12）。
 * 官方 PDF 中 `RadarInfoToClient` 的写法在两种线格式中分别实现：
   * 原文 `repeated uint32 RadarSingleRobotInfo;`（字段号未给出、类型写作 uint32），
-    该声明本身不是合法的 proto；常见开源实现（ACE / ClearWei）采用嵌套 message，与其不同。
+    该声明本身不合法；常见开源实现（ACE / ClearWei）采用嵌套 message，与其不同。
     本项目**两种解释都实现、可切换**：
     默认 `NestedMessage`（嵌套 message：`repeated RadarSingleRobotInfo radar_single_robot_info = 1;`，
     与 ACE / ClearWei 等第三方实现的线格式一致，也是 JSON / 日志使用的形式）；
@@ -716,7 +729,7 @@ bash tests/run_all.sh
     默认选嵌套的理由与实测见根目录 [README.md](../README.md)「雷达线格式」。
   * `CustomControl` 在 2026 V2.0.0 原文为 `bytes data=1；`（全角分号），2027 V1.0.0 原文为
     `optional bytes data=1;`，本项目按 2027 写法实现
-* RM2026 V2.0.0 → RM2027 V1.0.0 的全部变更（删 4 条指令、`GlobalUnitStatus` 字段重构、
+* RM2026 V2.0.0 → RM2027 V1.0.0 的全部变更（删除 4 条指令、`GlobalUnitStatus` 字段重构、
   `GameStatus.end_reason` / `Event.event_id` / `GlobalSpecialMechanism.mechanism_id` 枚举重排、
   `RadarInfoToClient` 每方 4 台共 8 目标、`CustomControl` 上限 30→60 字节、装配主体迁移到重装等）
   见 [docs/V1.0.0-变更分析.md](V1.0.0-变更分析.md)。
@@ -738,7 +751,7 @@ bash tests/run_all.sh
 * 协议**业务语义**：目前服务器按场景发布、客户端按场景发送，尚未实现「根据机器人状态
   自动生成下行数据」或「解析 `CommonCommand` 并改变比赛状态」这类游戏逻辑。
   当前定位是**协议层与图传层的正确实现 + 可复现验证**。
-* 2027 新增/改义的字段（`GlobalUnitStatus.total_CP_*`、`outpost_R/B_status` 的阵地控制档位、
+* 2027 新增/改变含义的字段（`GlobalUnitStatus.total_CP_*`、`outpost_R/B_status` 的阵地控制档位、
   `RobotModuleStatus.modular_42mm`、`GlobalSpecialMechanism` 3–6 号机制的推进方向等）目前只做
   **透传**，未实现进一步的比赛逻辑判定。
 * 服务器未校验收到的上行是否来自「clientID = 机器人 ID」（规范要求，但未强制校验）。

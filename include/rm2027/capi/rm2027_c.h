@@ -112,7 +112,7 @@ void rm_set_event_cb(rm_handle h, rm_event_cb cb, void *user);
  * 还接受 "hevc" / "H.265" / "mjpeg" 等写法（大小写、点、横线都不敏感） */
 #define RM_VIDEO_CODEC_AUTO "auto"
 
-/* 收帧回调：bgr 指针只在回调期间有效，需要留存请自行拷贝 */
+/* 接收帧回调：bgr 指针只在回调期间有效，需要留存请自行拷贝 */
 typedef void (*rm_video_frame_cb)(void *user, const uint8_t *bgr, int width, int height,
                                   int stride, uint64_t frame_no, int keyframe);
 
@@ -142,7 +142,7 @@ int rm_video_sender_flush(rm_handle h);
 /* 统计 JSON 写入 buf，返回实际长度（不含结尾 0）；buf 太小返回 -1 */
 int rm_video_sender_stats(rm_handle h, char *buf, int buflen);
 
-/* ---- 接收端（收图片） ---- */
+/* ---- 接收端（接收图片） ---- */
 rm_handle rm_video_receiver_new(const char *bind_host, uint16_t port);
 void      rm_video_receiver_free(rm_handle h);
 int       rm_video_receiver_start(rm_handle h);
@@ -169,7 +169,7 @@ const char *rm_video_receiver_codec_mode(rm_handle h);
 int rm_video_receiver_get_frame(rm_handle h, uint8_t *bgr, int buflen, int *width, int *height,
                                 int *stride, uint64_t *frame_no, int *keyframe, uint64_t *since);
 
-/* 可选：每解出一帧同步回调（一帧不漏）。预览建议用 get_frame 主动拉取。 */
+/* 可选：每解码出一帧同步回调（一帧不漏）。预览建议用 get_frame 主动拉取。 */
 void rm_video_receiver_set_frame_cb(rm_handle h, rm_video_frame_cb cb, void *user);
 
 /* 统计 JSON 写入 buf，返回实际长度（不含结尾 0）；buf 太小返回 -1 */

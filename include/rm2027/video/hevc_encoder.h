@@ -2,7 +2,7 @@
 //
 // 设计目标：
 //   * 输入是图像（BGR24），输出是一个 **完整的 access unit**（Annex-B 字节）
-//   * 编码参数尽可能可调 —— 用来构造各种「难搞」的码流压测客户端
+//   * 编码参数尽可能可调 —— 用来构造各种难以解码的码流压测客户端
 //
 // 官方要求 1920x1080@60fps；输入分辨率不符时用 swscale 缩放。
 #pragma once
@@ -18,14 +18,14 @@ namespace rm2027 {
 
 // 编码参数。默认值 = 贴近官方规格的「正常」配置。
 struct EncoderConfig {
-    // ---- 输出规格（默认严格对齐官方 1920x1080@60）----
+    // ---- 输出规格（默认严格符合官方 1920x1080@60）----
     int width{1920};
     int height{1080};
     int fps{60};
     int bitrateKbps{8000};
 
     // ---- 压力测试维度（默认都是"正常"值）----
-    int gopSize{60};          // 关键帧间隔；1 = 全 IDR；0 = 只发第一个 IDR
+    int gopSize{60};          // 关键帧间隔；1 = 全 IDR；0 = 只发送第一个 IDR
     int bFrames{0};           // B 帧数量（>0 时输出顺序 ≠ 输入顺序）
     int slices{1};            // 每帧 slice 数（>1 时一个 AU 含多个 VCL NAL）
     bool aud{false};          // 是否插入 AUD(35)

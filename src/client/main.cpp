@@ -167,7 +167,7 @@ int main(int argc, char **argv) {
     std::signal(SIGINT, onSignal);
     std::signal(SIGTERM, onSignal);
 
-    // ---- 按场景发上行指令；没有场景就单纯接收 ----
+    // ---- 按场景发送上行指令；没有场景就单纯接收 ----
     rm2027::Scenario scenario;
     if (!publishScenario.empty()) {
         std::string serr;
@@ -198,7 +198,7 @@ int main(int argc, char **argv) {
                 const std::string json = rm2027::toJson(*msg);
                 const std::size_t sz = rm2027::toBinary(*msg).size();
                 if (client.send(std::move(msg))) {
-                    emitRecord("up", st.topic, sz, json);   // 记录里方向标 up（校验脚本按 dir 取）
+                    emitRecord("up", st.topic, sz, json);   // 记录里方向标 up（校验脚本按 dir 获取）
                 } else {
                     RM_WARN("main", "发送 " << st.topic << " 失败");
                 }

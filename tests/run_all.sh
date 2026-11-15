@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 一键跑全部验证（官方协议 V1.0.0）。任何一项失败都会以非 0 退出。
+# 一键运行全部验证（官方协议 V1.0.0）。任何一项失败都会以非 0 退出。
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"
